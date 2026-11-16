@@ -127,6 +127,9 @@ from the library.
 Code is released under the MIT licence (see `LICENSE`). Yahoo Finance and Kenneth French data are not covered and
 are not redistributed here.
 
+**Use.** This is a non-commercial research project. The data and all derived outputs in this repository are used
+for research only.
+
 ## Notes
 
 Developed with an AI-assisted coding workflow. The research questions, analysis plans and interpretation of results
