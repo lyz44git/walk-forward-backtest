@@ -1,0 +1,566 @@
+{
+ "etf": {
+  "SPY": {
+   "first": "1993-01-29",
+   "last": "2026-11-06",
+   "rows": 8502,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 136,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.14519767313737364,
+   "max_abs_overnight_gap": 0.10448591878100821
+  },
+  "QQQ": {
+   "first": "1999-03-10",
+   "last": "2026-11-06",
+   "rows": 6960,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 90,
+   "split_days": [
+    "2000-03-20"
+   ],
+   "abs_return_at_split_days": [
+    -0.028200863664485376
+   ],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.16842097764522412,
+   "max_abs_overnight_gap": 0.09457209464296634
+  },
+  "IWM": {
+   "first": "2000-05-26",
+   "last": "2026-11-06",
+   "rows": 6652,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 107,
+   "split_days": [
+    "2005-06-09"
+   ],
+   "abs_return_at_split_days": [
+    0.009802663182179261
+   ],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.1326694065849573,
+   "max_abs_overnight_gap": 0.09916417849575487
+  },
+  "DIA": {
+   "first": "1998-01-20",
+   "last": "2026-11-06",
+   "rows": 7246,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 341,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.13555921385653025,
+   "max_abs_overnight_gap": 0.1103357950069428
+  },
+  "MDY": {
+   "first": "1995-05-04",
+   "last": "2026-11-06",
+   "rows": 7931,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 127,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.13649100721111007,
+   "max_abs_overnight_gap": 0.10614394210527556
+  },
+  "EFA": {
+   "first": "2001-08-27",
+   "last": "2026-11-06",
+   "rows": 6337,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 47,
+   "split_days": [
+    "2005-06-09"
+   ],
+   "abs_return_at_split_days": [
+    0.003948953390698895
+   ],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.15887624237821218,
+   "max_abs_overnight_gap": 0.11944799144462104
+  },
+  "EEM": {
+   "first": "2003-04-14",
+   "last": "2026-11-06",
+   "rows": 5931,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 47,
+   "split_days": [
+    "2005-06-09",
+    "2008-07-24"
+   ],
+   "abs_return_at_split_days": [
+    0.0052432972924933985,
+    -0.036958636381884236
+   ],
+   "days_abs_return_gt_20pct": 2,
+   "max_abs_daily_return": 0.22769858882810645,
+   "max_abs_overnight_gap": 0.1332939908874755
+  },
+  "VGK": {
+   "first": "2005-03-10",
+   "last": "2026-11-06",
+   "rows": 5451,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 65,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.1419070133313507,
+   "max_abs_overnight_gap": 0.13657184446549264
+  },
+  "EWJ": {
+   "first": "1996-03-18",
+   "last": "2026-11-06",
+   "rows": 7711,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 50,
+   "split_days": [
+    "2016-11-07"
+   ],
+   "abs_return_at_split_days": [
+    0.007067774518131786
+   ],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.15822022798215207,
+   "max_abs_overnight_gap": 0.09929026960370746
+  },
+  "FXI": {
+   "first": "2004-10-08",
+   "last": "2026-11-06",
+   "rows": 5556,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 40,
+   "split_days": [
+    "2008-07-24"
+   ],
+   "abs_return_at_split_days": [
+    -0.04294101979273501
+   ],
+   "days_abs_return_gt_20pct": 3,
+   "max_abs_daily_return": 0.21241222882930755,
+   "max_abs_overnight_gap": 0.12801040190293544
+  },
+  "XLB": {
+   "first": "1998-12-22",
+   "last": "2026-11-06",
+   "rows": 7012,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 111,
+   "split_days": [
+    "2025-12-05"
+   ],
+   "abs_return_at_split_days": [
+    -0.003277931468616213
+   ],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.14057693726009202,
+   "max_abs_overnight_gap": 0.18963675874667119
+  },
+  "XLE": {
+   "first": "1998-12-22",
+   "last": "2026-11-06",
+   "rows": 7012,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 112,
+   "split_days": [
+    "2025-12-05"
+   ],
+   "abs_return_at_split_days": [
+    -0.004120697955766861
+   ],
+   "days_abs_return_gt_20pct": 1,
+   "max_abs_daily_return": 0.20141149507873213,
+   "max_abs_overnight_gap": 0.17482322459968047
+  },
+  "XLF": {
+   "first": "1998-12-22",
+   "last": "2026-11-06",
+   "rows": 7012,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 111,
+   "split_days": [
+    "2016-09-19"
+   ],
+   "abs_return_at_split_days": [
+    0.006376151291021204
+   ],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.16666650506144332,
+   "max_abs_overnight_gap": 0.22098907615302
+  },
+  "XLI": {
+   "first": "1998-12-22",
+   "last": "2026-11-06",
+   "rows": 7012,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 1,
+   "adj_factor_decreases": 0,
+   "dividend_days": 110,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.1265120744921362,
+   "max_abs_overnight_gap": 0.1067684683079948
+  },
+  "XLK": {
+   "first": "1998-12-22",
+   "last": "2026-11-06",
+   "rows": 7012,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 85,
+   "split_days": [
+    "2025-12-05"
+   ],
+   "abs_return_at_split_days": [
+    0.007317756881309201
+   ],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.1610167779191003,
+   "max_abs_overnight_gap": 0.1481172632580534
+  },
+  "XLP": {
+   "first": "1998-12-22",
+   "last": "2026-11-06",
+   "rows": 7012,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 111,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.0939562770861303,
+   "max_abs_overnight_gap": 0.0929167007814019
+  },
+  "XLU": {
+   "first": "1998-12-22",
+   "last": "2026-11-06",
+   "rows": 7012,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 112,
+   "split_days": [
+    "2025-12-05"
+   ],
+   "abs_return_at_split_days": [
+    -0.00938004069809717
+   ],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.12793461615654422,
+   "max_abs_overnight_gap": 0.09034167401056936
+  },
+  "XLV": {
+   "first": "1998-12-22",
+   "last": "2026-11-06",
+   "rows": 7012,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 106,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.12054750422033433,
+   "max_abs_overnight_gap": 0.08978611060260422
+  },
+  "XLY": {
+   "first": "1998-12-22",
+   "last": "2026-11-06",
+   "rows": 7012,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 111,
+   "split_days": [
+    "2025-12-05"
+   ],
+   "abs_return_at_split_days": [
+    0.0055430226062735954
+   ],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.12668610752077936,
+   "max_abs_overnight_gap": 0.10997049658875169
+  },
+  "IYR": {
+   "first": "2000-06-19",
+   "last": "2026-11-06",
+   "rows": 6637,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 5,
+   "adj_factor_decreases": 0,
+   "dividend_days": 106,
+   "split_days": [
+    "2005-06-09"
+   ],
+   "abs_return_at_split_days": [
+    0.0011055149879102277
+   ],
+   "days_abs_return_gt_20pct": 1,
+   "max_abs_daily_return": 0.20611164974450136,
+   "max_abs_overnight_gap": 0.12179140125256716
+  },
+  "TLT": {
+   "first": "2002-07-30",
+   "last": "2026-11-06",
+   "rows": 6109,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 289,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.07519619882320705,
+   "max_abs_overnight_gap": 0.07393388977335547
+  },
+  "IEF": {
+   "first": "2002-07-30",
+   "last": "2026-11-06",
+   "rows": 6109,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 291,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.0342634376310611,
+   "max_abs_overnight_gap": 0.02367116060282526
+  },
+  "SHY": {
+   "first": "2002-07-30",
+   "last": "2026-11-06",
+   "rows": 6109,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 290,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.009974183446784357,
+   "max_abs_overnight_gap": 0.015018852197498544
+  },
+  "LQD": {
+   "first": "2002-07-30",
+   "last": "2026-11-06",
+   "rows": 6109,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 290,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.0976779677665447,
+   "max_abs_overnight_gap": 0.07471738687059959
+  },
+  "HYG": {
+   "first": "2007-04-11",
+   "last": "2026-11-06",
+   "rows": 4927,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 233,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.12268829225500633,
+   "max_abs_overnight_gap": 0.0636090189281725
+  },
+  "TIP": {
+   "first": "2003-12-05",
+   "last": "2026-11-06",
+   "rows": 5767,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 202,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.04453689140305528,
+   "max_abs_overnight_gap": 0.02414231627035124
+  },
+  "GLD": {
+   "first": "2004-11-18",
+   "last": "2026-11-06",
+   "rows": 5527,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 0,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.11290530102327678,
+   "max_abs_overnight_gap": 0.05979026872638682
+  },
+  "SLV": {
+   "first": "2006-04-28",
+   "last": "2026-11-06",
+   "rows": 5165,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 0,
+   "split_days": [
+    "2008-07-24"
+   ],
+   "abs_return_at_split_days": [
+    0.004072117082575488
+   ],
+   "days_abs_return_gt_20pct": 1,
+   "max_abs_daily_return": 0.28540302491726877,
+   "max_abs_overnight_gap": 0.15383156115103913
+  },
+  "DBC": {
+   "first": "2006-02-06",
+   "last": "2026-11-06",
+   "rows": 5222,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 9,
+   "split_days": [],
+   "abs_return_at_split_days": [],
+   "days_abs_return_gt_20pct": 0,
+   "max_abs_daily_return": 0.07944421255831902,
+   "max_abs_overnight_gap": 0.07784422983228279
+  },
+  "USO": {
+   "first": "2006-04-10",
+   "last": "2026-11-06",
+   "rows": 5178,
+   "missing_vs_spy_calendar": 0,
+   "nonpositive_prices": 0,
+   "nan_rows": 0,
+   "zero_volume_days": 0,
+   "adj_factor_decreases": 0,
+   "dividend_days": 0,
+   "split_days": [
+    "2020-04-29"
+   ],
+   "abs_return_at_split_days": [
+    0.056337971413949806
+   ],
+   "days_abs_return_gt_20pct": 2,
+   "max_abs_daily_return": 0.2531500202969871,
+   "max_abs_overnight_gap": 0.21878573547847802
+  }
+ },
+ "french": {
+  "rows": 26338,
+  "first": "1926-07-01",
+  "last": "2026-09-30",
+  "industries": 49,
+  "industries_complete_from_1970": 48,
+  "latest_industry_start": "1969-07-01",
+  "latest_industry": "Hlth",
+  "days_abs_return_gt_20pct": 261,
+  "missing_after_1970": 1,
+  "factors_first": "1926-07-01",
+  "factors_last": "2026-09-30",
+  "date_mismatch_industries_vs_factors": 0
+ },
+ "etf_summary": {
+  "tickers": 30,
+  "common_start": "2007-04-11",
+  "last": "2026-11-06",
+  "flagged": []
+ }
+}

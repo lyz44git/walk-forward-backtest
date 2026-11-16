@@ -1,0 +1,5 @@
+signal,etf,french,passes_preregistered_rule
+lgbm,False,True,False
+mom_12_1,False,True,False
+rev_1w,False,False,False
+ridge,False,True,False

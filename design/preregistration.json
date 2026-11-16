@@ -1,0 +1,53 @@
+{
+  "written": "2026-11-08, before any out-of-sample result was computed",
+  "question": "Do simple price-based features predict next-week cross-sectional relative returns of liquid ETFs and of U.S. industry portfolios, out of sample and after trading costs?",
+  "reporting_rule": "All results are reported whatever they show. Any change to this design after seeing out-of-sample results is logged in design/deviations.md.",
+  "datasets": {
+    "etf": {
+      "source": "Yahoo Finance via yfinance (auto_adjust=False): split-adjusted OHLC, dividend-adjusted close, volume",
+      "universe": ["SPY", "QQQ", "IWM", "DIA", "MDY", "EFA", "EEM", "VGK", "EWJ", "FXI", "XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY", "IYR", "TLT", "IEF", "SHY", "LQD", "HYG", "TIP", "GLD", "SLV", "DBC", "USO"],
+      "sample": "2007-04-11 (all 30 trade) to the last complete week",
+      "prices": "total-return index = dividend-adjusted close; adjusted open = open x (adjusted close / close) of the same day",
+      "execution": "signal at the close of the last trading day of the week; enter at the next trading day's open; hold until the open after the next signal",
+      "initial_training_weeks": 156
+    },
+    "french": {
+      "source": "Kenneth French data library: 49 industry portfolios, value-weighted daily returns (CRSP); Fama-French daily RF",
+      "universe": "49 industries; an industry enters once it has a return",
+      "sample": "1969-07-01 (all 49 have returns) to 2026-09-30",
+      "prices": "total-return index = cumulative product of (1 + daily return)",
+      "execution": "signal at the close of the last trading day of the week; enter at the close of the next trading day (one-day implementation lag); hold until the close of the day after the next signal",
+      "initial_training_weeks": 260
+    }
+  },
+  "features": {
+    "all": ["ret_5d", "ret_21d", "ret_63d", "ret_126d", "mom_12_1 (t-252 to t-21)", "vol_21d", "vol_63d", "gap_ma200 (price / 200-day mean - 1)", "dd_63d (price / 63-day max - 1)"],
+    "etf_only": ["dvol_surge (log mean dollar volume, 5 days vs 63 days)"],
+    "history_needed": "252 trading days",
+    "transform": "cross-sectional rank on each signal date, scaled to [-0.5, 0.5]; no time-series scaling"
+  },
+  "target": "holding-period return; models are fitted on its cross-sectional rank scaled to [-0.5, 0.5]",
+  "signals": {
+    "mom_12_1": "rank of mom_12_1 (no fitting)",
+    "rev_1w": "minus the rank of ret_5d (no fitting)",
+    "ridge": "ridge regression on the ranked features, alpha = 1.0, intercept",
+    "lgbm": "LightGBM regression: 300 trees, learning_rate 0.02, num_leaves 7, min_data_in_leaf 100, feature_fraction 0.8, bagging_fraction 0.8, bagging_freq 1, lambda_l2 5, seed 0"
+  },
+  "training": {
+    "window": "expanding",
+    "refit_every_weeks": 4,
+    "purge": "a training week is used only if its holding period ended before the refit signal date",
+    "embargo_weeks": 1
+  },
+  "portfolios": {
+    "long_short": "equal-weight long the top 20% and short the bottom 20% by signal (ETF 6 and 6, industries 10 and 10 when all 49 are present); each leg 100% of capital; weights drift between rebalances",
+    "long_only": "equal-weight top 20%, compared with the equal-weight universe"
+  },
+  "costs": {
+    "main": "5 bps per unit of traded notional (one-way), plus 50 bps a year borrow on short notional",
+    "grid_bps": [0, 2, 5, 10]
+  },
+  "metrics": ["weekly rank IC (Spearman of signal vs realized period return)", "mean IC, IC information ratio, Newey-West t-stat (4 lags)", "share of weeks with IC > 0", "long-short annualized return, volatility, Sharpe (52 weeks), max drawdown, annual turnover", "Sharpe 95% CI: stationary block bootstrap, mean block 8 weeks, 2000 draws, seed 0", "deflated Sharpe ratio (Bailey and Lopez de Prado 2014) with N = 4 signals per dataset", "beta and alpha of long-short returns against the equal-weight universe (Newey-West)"],
+  "robustness": ["placebo: training targets permuted across assets within each week; IC should vanish", "features lagged one extra week", "ETF: enter at the next close instead of the next open", "cost grid", "first and second half of the out-of-sample period", "long-only variant"],
+  "decision_rule": "A signal counts as working only if, on both datasets, mean OOS IC > 0 with Newey-West t > 2 AND the net-of-cost long-short Sharpe 95% CI excludes 0. Otherwise it is reported as not robust."
+}

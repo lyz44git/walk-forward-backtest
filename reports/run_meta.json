@@ -1,0 +1,39 @@
+{
+ "etf": {
+  "panel_rows": 29040,
+  "features": [
+   "ret_5d",
+   "ret_21d",
+   "ret_63d",
+   "ret_126d",
+   "mom_12_1",
+   "vol_21d",
+   "vol_63d",
+   "gap_ma200",
+   "dd_63d",
+   "dvol_surge"
+  ],
+  "first_signal_oos": "2011-04-21",
+  "last_signal_oos": "2026-10-23",
+  "oos_weeks": 810,
+  "first_feature_week": "2008-04-11"
+ },
+ "french": {
+  "panel_rows": 143725,
+  "features": [
+   "ret_5d",
+   "ret_21d",
+   "ret_63d",
+   "ret_126d",
+   "mom_12_1",
+   "vol_21d",
+   "vol_63d",
+   "gap_ma200",
+   "dd_63d"
+  ],
+  "first_signal_oos": "1975-07-11",
+  "last_signal_oos": "2026-09-18",
+  "oos_weeks": 2672,
+  "first_feature_week": "1970-07-02"
+ }
+}
