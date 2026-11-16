@@ -2,9 +2,9 @@
 
 [![tests](https://github.com/lyz44git/walk-forward-backtest/actions/workflows/tests.yml/badge.svg)](https://github.com/lyz44git/walk-forward-backtest/actions/workflows/tests.yml)
 
-<img src="figures/figure1.png" alt="Four-panel figure: cumulative net returns on ETFs and on industry portfolios; real rank IC against placebo distributions; net Sharpe ratios with confidence intervals." width="100%">
+<img src="figures/figure1.png" alt="Four-panel figure: cumulative net returns on industry portfolios with ETFs inset; real rank IC against placebo distributions; net Sharpe ratios with intervals; net Sharpe on ETFs against trading cost." width="100%">
 
-**Figure 1 | Headline results.** **a**, **b**, Value of 1 invested in each long-short signal after costs, out of sample, on 30 ETFs and on 49 industry portfolios (log scale; net Sharpe ratio in the legend). **c**, Mean weekly rank IC of ridge models trained on shuffled targets (100 seeds per dataset) against the real IC (vertical lines), which exceeds every placebo seed. **d**, Net Sharpe ratio with stationary block-bootstrap 95% CIs; intervals that span zero are grey. Every ETF interval spans zero, so no signal passes the rule fixed in advance on both datasets. Drawn by [`figures/make_figure1.py`](figures/make_figure1.py) from `reports/`.
+**Figure 1 | Headline results.** **a**, Value of 1 invested in each long-short signal after costs, out of sample, on 49 industry portfolios (log scale); the dashed line splits the sample into halves, labelled with the LightGBM net Sharpe ratio in each. Inset: the same on 30 ETFs. **b**, Mean weekly rank IC of ridge models trained on shuffled targets (100 seeds per dataset) against the real IC (vertical lines), which exceeds every placebo seed. **c**, Net Sharpe ratio with stationary block-bootstrap 95% intervals. Every ETF interval spans zero, so no signal passes the rule fixed in advance on both datasets. **d**, Net Sharpe ratio on ETFs as the assumed one-way trading cost rises from 0 to 10 bps; the reported results use 5 bps. Drawn by [`figures/make_figure1.py`](figures/make_figure1.py) from `reports/`.
 
 > **Takeaway.** Ridge and LightGBM find a real out-of-sample ranking signal (it beats every placebo seed), but after
 > trading costs they do no better than plain 12-1 momentum, and on tradable ETFs no signal has a net Sharpe ratio
