@@ -1,8 +1,8 @@
 """Loaders for the two raw datasets, returning tidy daily panels.
 
 ETF panel (Yahoo): yfinance `history(auto_adjust=False)` gives split-adjusted OHLC, a split- and
-dividend-adjusted close ("Adj Close"), and the dividend/split actions. We apply the day's total-return
-factor f_t = AdjClose_t / Close_t to the open as well, so open-to-open returns include dividends.
+dividend-adjusted close ("Adj Close"), and the dividend/split actions. The day's total-return factor
+f_t = AdjClose_t / Close_t is applied to the open as well, so open-to-open returns include dividends.
 
 Industry panel (Ken French): the value-weighted section of the 49-industry daily file, in percent;
 -99.99 and -999 mark missing values. The Fama-French daily file supplies RF and Mkt-RF (percent).
