@@ -4,7 +4,7 @@
 
 <img src="figures/figure1.png" alt="Four-panel figure: cumulative net returns on industry portfolios with ETFs inset; real rank IC against placebo distributions; net Sharpe ratios with intervals; net Sharpe on ETFs against trading cost." width="100%">
 
-**Figure 1 | Headline results.** **a**, Value of 1 invested in each long-short signal after costs, out of sample, on 49 industry portfolios (log scale); the dashed line splits the sample into halves, labelled with the LightGBM net Sharpe ratio in each. Inset: the same on 30 ETFs. **b**, Mean weekly rank IC of ridge models trained on shuffled targets (100 seeds per dataset) against the real IC (vertical lines), which exceeds every placebo seed. **c**, Net Sharpe ratio with stationary block-bootstrap 95% intervals. Every ETF interval spans zero, so no signal passes the rule fixed in advance on both datasets. **d**, Net Sharpe ratio on ETFs as the assumed one-way trading cost rises from 0 to 10 bps; the reported results use 5 bps. Drawn by [`figures/make_figure1.py`](figures/make_figure1.py) from `reports/`.
+**Figure 1 | Headline results.** **a**, Value of 1 invested in each long-short signal after costs, out of sample, on 49 industry portfolios (log scale); the dashed line splits the sample into halves, labeled with the LightGBM net Sharpe ratio in each. Inset: the same on 30 ETFs. **b**, Mean weekly rank IC of ridge models trained on shuffled targets (100 seeds per dataset) against the real IC (vertical lines), which exceeds every placebo seed. **c**, Net Sharpe ratio with stationary block-bootstrap 95% intervals. Every ETF interval spans zero, so no signal passes the rule fixed in advance on both datasets. **d**, Net Sharpe ratio on ETFs as the assumed one-way trading cost rises from 0 to 10 bps; the reported results use 5 bps. Drawn by [`figures/make_figure1.py`](figures/make_figure1.py) from `reports/`.
 
 > **Takeaway.** Ridge and LightGBM find a real out-of-sample ranking signal (it beats every placebo seed), but after
 > trading costs they do no better than plain 12-1 momentum, and on tradable ETFs no signal has a net Sharpe ratio
@@ -18,7 +18,7 @@ trading costs? The same pipeline is run on two public datasets:
 - **49 U.S. industry portfolios** (Kenneth French data library, value-weighted, CRSP-based). Out of sample
   1975-07 to 2026-09, 2,672 weeks, entering at the next day's close.
 
-The design (features, models, hyper-parameters, costs, metrics and a pass/fail rule) was written to
+The design (features, models, hyperparameters, costs, metrics and a pass/fail rule) was written to
 `design/preregistration.json` before any out-of-sample number was computed. This is a self-written plan, not
 an external registry. A first run was stopped part-way, and five changes were made after a code audit; all
 of them are logged, with reasons, in `design/deviations.md`. Models, costs and the pass/fail rule never
@@ -92,8 +92,8 @@ changed.
   planted lagged signal is found, and that the long-short accounting is correct.
 - **Code review:** a structured review by lens (timing and look-ahead, walk-forward, accounting, statistics,
   data) found two material errors, both fixed before the reported run: a placebo that reused one permutation
-  (spurious t = 7.1 on industries) and an alpha regression that did not subtract the risk-free rate. Three
-  lower-priority issues were also fixed. All five changes are in `design/deviations.md`.
+  across refits and an alpha regression that did not subtract the risk-free rate. Three lower-priority issues were
+  also fixed. All five changes are in `design/deviations.md`.
 - **Independent recomputation:** `scripts/06_recompute_check.py` recomputes the mean IC, Newey-West t, hit rate,
   gross and net Sharpe, net return and turnover for all eight dataset-signal pairs from the saved weekly series,
   with formulas written separately from the package. The largest difference from the reported values is 1.4e-14
@@ -126,9 +126,9 @@ python3 scripts/06_recompute_check.py   # reads reports/ only
 Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
 from the library.
 
-## Licence
+## License
 
-Code is released under the MIT licence (see `LICENSE`). Yahoo Finance and Kenneth French data are not covered and
+Code is released under the MIT License (see `LICENSE`). Yahoo Finance and Kenneth French data are not covered and
 are not redistributed here.
 
 **Use.** This is a non-commercial research project. The data and all derived outputs in this repository are used
