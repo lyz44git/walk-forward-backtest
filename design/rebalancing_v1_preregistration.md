@@ -1,16 +1,18 @@
-# Pre-registration: RL partial rebalancing on the 17_quant_market_backtest targets
+# Pre-registration (first design): PPO partial rebalancing on the Part 1 targets
+
+Superseded as the headline analysis by `rebalancing_v2_plan.md`; kept unchanged in substance as the record of the first design.
 
 Written 2026-11-14, after building the target portfolios and checking that full rebalancing reproduces the
 project's `reports/ls_weekly.csv` (max abs error 1e-16), and BEFORE any test-period number of any new rule
-(fixed rate, band, RL) was computed. The full-rebalancing test-period numbers are already public in the 17
-project; nothing below was chosen by looking at them. Later changes go to `design/deviations.md`.
+(fixed rate, band, RL) was computed. The full-rebalancing test-period numbers are already public in Part 1
+results; nothing below was chosen by looking at them. Later changes go to `design/rebalancing_v1_deviations.md`.
 
 ## Question
 Can a PPO policy that chooses, each week, how far to trade toward the model's target long-short portfolio
 improve net-of-cost performance over (a) full weekly rebalancing, (b) the best fixed partial-adjustment rate
 chosen on the training span, (c) a per-asset no-trade band tuned on the training span?
 
-## Data, targets, accounting (unchanged from the 17 project)
+## Data, targets, accounting (unchanged from Part 1)
 - Targets: qmb walk-forward predictions with the project's main settings (expanding window, refit every 4 weeks,
   purge + 1-week embargo); long top 20% / short bottom 20%, equal weight, 100% per leg.
 - Signals: `mom_12_1` and `ridge` on both datasets; `lgbm` too if its cached targets build within the compute
@@ -60,7 +62,7 @@ chosen on the training span, (c) a per-asset no-trade band tuned on the training
 - (b) Fixed eta from {0.05, 0.10, ..., 1.00}.
 - (c) Per-asset no-trade band: h_i = W_i + clip(d_i - W_i, -b, b), b = m / k for m in {0, 0.1, 0.25, 0.5, 0.75, 1, 1.5, 2}
   (k = names per leg).
-- The inherited plan proposed an ex-post test-span fixed-eta reference. The continuation omits it under the instruction to avoid test-period parameter selection.
+- An earlier draft proposed an ex-post test-span fixed-eta reference. It is omitted to avoid any parameter selection on the test period.
 
 ## Metrics (test span)
 Net Sharpe (52 weeks) with stationary block-bootstrap 95% CI (`qmb.stats.stationary_bootstrap_sharpe`, block 8,
@@ -76,7 +78,7 @@ comparisons is reported.
 
 ## Execution amendment before any new test evaluation
 
-The existing full-rebalance check in the opening paragraph predates this continuation and is an accounting parity check against the published source series. The new pytest checks and all test-policy metrics follow this amendment.
+The existing full-rebalance check in the opening paragraph predates the execution amendment and is an accounting parity check against the published source series. The new pytest checks and all test-policy metrics follow this amendment.
 
 - Keep all original cost, split, architecture, optimization, baseline and decision settings. The French LightGBM build uses the original walk-forward engine for at most 40 minutes, with the same settings as the source. Include all six cases if this finishes and reproduces the source series. Otherwise use the five existing cases and log the build status.
 - Use eight logical rollout partitions in any process count. Rollout start weeks, independent uniform inputs for exact inverse-CDF Beta sampling, and per-partition epoch permutations are derived from the seed and update. A process computes its assigned partitions, and averages gradients over the same global minibatches through Gloo when distributed. Use float64 for the actor/critic and the optimizer; normalize advantages over the global batch. The topology and sampling implementation are fixed here so the matched single- and eight-process runs can be directly compared.

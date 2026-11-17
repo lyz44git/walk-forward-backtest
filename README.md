@@ -1,4 +1,7 @@
-# Pre-specified walk-forward backtest: cross-sectional return prediction on ETFs and industry portfolios
+# Weekly equity signals under trading costs
+
+How much of a weekly cross-sectional return forecast is left after trading costs, and can a different
+rebalancing rule keep more of it? A pre-specified walk-forward study on 30 ETFs and 49 U.S. industry portfolios.
 
 [![tests](https://github.com/lyz44git/walk-forward-backtest/actions/workflows/tests.yml/badge.svg)](https://github.com/lyz44git/walk-forward-backtest/actions/workflows/tests.yml)
 
@@ -6,9 +9,16 @@
 
 **Figure 1 | Headline results.** **a**, Value of 1 invested in each long-short signal after costs, out of sample, on 49 industry portfolios (log scale); the dashed line splits the sample into halves, labeled with the LightGBM net Sharpe ratio in each. Inset: the same on 30 ETFs. **b**, Mean weekly rank IC of ridge models trained on shuffled targets (100 seeds per dataset) against the real IC (vertical lines), which exceeds every placebo seed. **c**, Net Sharpe ratio with stationary block-bootstrap 95% intervals. Every ETF interval spans zero, so no signal passes the rule fixed in advance on both datasets. **d**, Net Sharpe ratio on ETFs as the assumed one-way trading cost rises from 0 to 10 bps; the reported results use 5 bps. Drawn by [`figures/make_figure1.py`](figures/make_figure1.py) from `reports/`.
 
-> **Takeaway.** Ridge and LightGBM find a real out-of-sample ranking signal (it beats every placebo seed), but after
-> trading costs they do no better than plain 12-1 momentum, and on tradable ETFs no signal has a net Sharpe ratio
-> distinguishable from zero. Under the pass rule fixed in advance, nothing passes.
+> **Takeaways.**
+> 1. **Prediction.** Ridge and LightGBM rank next-week returns out of sample (rank IC 0.033–0.040, above every
+>    shuffled-target placebo seed). After 5 bps costs they do no better than plain 12-1 momentum, and on tradable
+>    ETFs no net Sharpe ratio is distinguishable from zero. Under the pass rule fixed in advance, nothing passes.
+> 2. **Rebalancing.** Trading less does not rescue the result at 5 bps. Four simple rules and a PPO policy cut
+>    turnover by 31–70% at the same exposure, but give up about as much return before costs as they save in costs:
+>    no rule's net Sharpe differs detectably from full rebalancing. The simple rules pay off only at higher
+>    costs (10 bps, industry portfolios: +0.11 to +0.19 net Sharpe), and the learned policy never beats them.
+
+[Reproduce the results](#reproduce) · [Prediction design](#part-1-design) · [Rebalancing design](design/rebalancing_v2_plan.md)
 
 **Question.** Do simple price-based features predict next-week relative returns, out of sample and after
 trading costs? The same pipeline is run on two public datasets:
@@ -24,7 +34,7 @@ an external registry. A first run was stopped part-way, and five changes were ma
 of them are logged, with reasons, in `design/deviations.md`. Models, costs and the pass/fail rule never
 changed.
 
-## Design
+## Part 1. Design
 
 | Element | Choice |
 |---|---|
@@ -38,7 +48,7 @@ changed.
 | Inference | Newey-West t for the mean rank IC; stationary block-bootstrap 95% CI for Sharpe; deflated Sharpe (N = 4); alpha vs the equal-weight universe's excess return |
 | Pass rule (fixed in advance) | On both datasets: mean IC > 0 with t > 2, and the net Sharpe CI excludes 0 |
 
-## Results (`reports/main_results.csv`, `reports/decision.csv`)
+## Part 1. Results (`reports/main_results.csv`, `reports/decision.csv`)
 
 | Dataset | Signal | Mean IC (NW t) | Sharpe before costs | Sharpe after costs (95% CI) | Turnover / yr |
 |---|---|---|---|---|---|
@@ -85,11 +95,88 @@ changed.
   - At 10 bps the ETF models turn negative.
   - Industry momentum keeps a net Sharpe of 0.30.
 
+## Part 2. Rebalancing rules (`reports/rebalancing/`)
+
+Part 1 leaves a question: the models lose half or more of their Sharpe ratio to costs, because they turn the book
+over 63–105 times a year. Part 2 holds the signals, trading dates and cost model of Part 1 fixed and
+changes only how the weekly target is traded. The plan, [`design/rebalancing_v2_plan.md`](design/rebalancing_v2_plan.md),
+was committed before any number below was computed.
+
+<img src="figures/figure2.png" alt="Left: net Sharpe ratio of each rebalancing rule minus full rebalancing, with 95% intervals, at 5 and 10 bps, for ETFs and industry portfolios, with annual turnover next to each rule. Right: mean net Sharpe ratio of each rule against the one-way trading cost." width="100%">
+
+**Figure 2 | What trading less is worth.** Left, net Sharpe ratio of each rule minus full rebalancing, averaged over the three signals (12-1 momentum, ridge, LightGBM), with paired stationary-bootstrap 95% intervals at 5 bps (filled) and 10 bps (open); annual turnover at 5 bps and its change from full rebalancing are on the right of each row. Right, mean net Sharpe ratio against the assumed one-way cost; rule parameters are re-selected on the training span at each cost, and the PPO policy is the one trained at 5 bps. Drawn by [`figures/make_figure2.py`](figures/make_figure2.py) from `reports/rebalancing/`.
+
+| Element | Choice |
+|---|---|
+| Cases | 2 datasets × 3 signals, with the Part 1 walk-forward predictions and targets |
+| Spans | ETFs: select 2012-04 to 2018-12, test 2019-01 to 2026-10 (408 weeks). Industries: select 1976-07 to 2000-12, test 2001-01 to 2026-09 (1,342 weeks) |
+| Full rebalancing | Trade to the target every week (the Part 1 portfolio) |
+| Partial adjustment | Trade a fixed fraction of the gap between holdings and target |
+| No-trade band | Per asset, trade only to the edge of a band around its target weight |
+| Rank buffer | A held name stays in its leg while it ranks inside a wider quantile; vacancies go to the best-ranked names |
+| Signal smoothing | Exponentially weighted mean of past weekly predictions, then the usual top and bottom 20% |
+| PPO policy | Actor-critic with a Beta policy over the adjustment fraction, 9 state features known at the signal date, written in PyTorch; 5 seeds, trained on the selection span only, with gradients averaged across 8 processes (`torch.distributed`) |
+| Selection | Each rule's one parameter is chosen by net Sharpe on the selection span, among values that keep the short-leg notional within 0.90–1.10 of target |
+| Estimand | Per dataset: mean over the three signals of net Sharpe (rule) − net Sharpe (full), with a stationary bootstrap that resamples the same weeks for every series (mean block 8 weeks, 2,000 draws) |
+| Reading rule (fixed in advance) | A rule recovers performance only if its interval is above zero on both datasets |
+
+Test-span results at 5 bps, averaged over the three signals (`rules_results.csv`, `rules_pooled.csv`):
+
+| Dataset | Rule | Turnover / yr | Return before costs | Costs | Net Sharpe | Difference from full, 5 bps (95% CI) | Difference from full, 10 bps (95% CI) |
+|---|---|---|---|---|---|---|---|
+| ETFs | Full rebalancing | 73× | 11.3% | 4.2% | 0.42 | — | — |
+| ETFs | Partial adjustment | 30× | 7.8% | 2.0% | 0.39 | −0.03 (−0.18, +0.14) | +0.09 (−0.08, +0.27) |
+| ETFs | No-trade band | 49× | 9.3% | 3.0% | 0.39 | −0.03 (−0.14, +0.09) | +0.04 (−0.07, +0.16) |
+| ETFs | Rank buffer | 27× | 8.5% | 1.9% | 0.41 | −0.02 (−0.22, +0.20) | +0.12 (−0.10, +0.35) |
+| ETFs | Signal smoothing | 43× | 7.3% | 2.7% | 0.27 | −0.15 (−0.35, +0.05) | +0.05 (−0.20, +0.32) |
+| ETFs | PPO policy | 22× | 5.5% | 1.6% | 0.26 | −0.17 (−0.39, +0.07) | −0.02 (−0.24, +0.22) |
+| Industries | Full rebalancing | 55× | 5.8% | 3.2% | 0.14 | — | — |
+| Industries | Partial adjustment | 34× | 4.8% | 2.2% | 0.15 | +0.01 (−0.04, +0.06) | +0.11 (+0.02, +0.20) |
+| Industries | No-trade band | 28× | 5.4% | 2.0% | 0.23 | +0.09 (−0.01, +0.19) | +0.19 (+0.07, +0.30) |
+| Industries | Rank buffer | 20× | 4.7% | 1.5% | 0.19 | +0.04 (−0.05, +0.15) | +0.15 (+0.06, +0.26) |
+| Industries | Signal smoothing | 28× | 5.0% | 1.9% | 0.17 | +0.03 (−0.05, +0.12) | +0.15 (+0.03, +0.27) |
+| Industries | PPO policy | 38× | 4.6% | 2.4% | 0.13 | −0.01 (−0.07, +0.04) | +0.03 (−0.03, +0.09) |
+
+**What this shows**
+
+1. **Every rule trades much less at the same exposure.** Turnover falls by 33–70% on ETFs and 31–63% on
+   industries, with the short leg between 0.90 and 1.11 of target on the test span.
+2. **At 5 bps the saving is offset by lost return.** On ETFs the rank buffer saves 2.3 points of costs a year
+   and gives up 2.8 points of return before costs. The forecasts are for one week, so a position that is not
+   refreshed loses its edge about as fast as it saves costs. No interval excludes zero on either dataset; under
+   the reading rule, no rule recovers performance.
+3. **The value of trading less rises with the cost.** At 10 bps all four simple rules beat full rebalancing on
+   the industry portfolios (+0.11 to +0.19, intervals above zero); the ETF intervals still include zero. The cost
+   grid is a pre-specified sensitivity, not the headline.
+4. **The learned policy adds nothing over the simple rules.** Averaged over signals, PPO is below every
+   simple rule on both datasets; on industries it is worse than the no-trade band (−0.10, interval −0.19 to −0.02). The conclusion is that the
+   cost drag in Part 1 is a property of the signal's horizon, not of the trading rule.
+5. **Block length does not matter.** With mean blocks of 4 and 16 weeks every 5 bps conclusion is unchanged.
+
+**How this design came about.** A first design ([`design/rebalancing_v1_preregistration.md`](design/rebalancing_v1_preregistration.md),
+results in `reports/rebalancing/v1/`) compared full rebalancing, partial adjustment, a no-trade band and PPO, with
+PPO meeting its improvement rule in 0 of 18 comparisons. A check of its weekly output showed that selecting the band
+width by Sharpe alone admitted a degenerate rule: a band as wide as a position never opens one, and the selected ETF
+LightGBM band held 3% of its target exposure, with a return of exactly zero in 359 of 408 weeks. The second design
+adds the exposure constraint, two rules that stay fully invested by construction, a pooled estimand and paired
+intervals. It was written after the first test-span results were known, so it is a second iteration on a span that
+had been looked at once.
+
+**Distributed training.** The same PPO script runs in one process or under `torchrun`. On one machine, one seed
+of one case took 91 s in one process and 56 s in eight, with identical parameters, weekly actions and test metrics
+(`v1/timing.csv`, `v1/distributed_parity.csv`).
+
 ## Verification
 
-- **Tests:** 8 pytest tests on synthetic data (`tests/`). They check that features use no future prices,
-  that the target spans exactly entry → exit, that purging works, that pure noise gives no skill, that a
-  planted lagged signal is found, and that the long-short accounting is correct.
+- **Tests:** 18 pytest tests on synthetic data (`tests/`). Eight check the engine: features use no future
+  prices, the target spans exactly entry → exit, purging works, pure noise gives no skill, a planted lagged
+  signal is found, and the long-short accounting is correct. Ten check the rebalancing rules: cost and
+  borrow accounting, that the neutral parameter of each rule returns the Part 1 targets, that both legs stay
+  full and disjoint, that a rule cannot see later predictions, and that the degenerate band is caught. Seven
+  more run when the cached targets are present: full rebalancing reproduces `reports/ls_weekly.csv` to 1e-12
+  for all six cases, and the PPO state uses only completed weeks.
+- **Regeneration:** after the rebalancing code was merged, the Part 1 weekly returns and all five first-design
+  result files were regenerated byte for byte.
 - **Code review:** a structured review by lens (timing and look-ahead, walk-forward, accounting, statistics,
   data) found two material errors, both fixed before the reported run: a placebo that reused one permutation
   across refits and an alpha regression that did not subtract the risk-free rate. Three lower-priority issues were
@@ -121,6 +208,14 @@ python3 scripts/03_backtest.py      # ~35 min on a 32-core machine
 python3 scripts/04_placebo.py && python3 scripts/04_placebo.py --summary
 python3 scripts/05_figures.py
 python3 scripts/06_recompute_check.py   # reads reports/ only
+
+# Part 2
+python3 scripts/07_build_targets.py     # weekly targets of the six cases into tmp/rebalance
+pip install -r requirements-ppo.txt     # PyTorch, only for the PPO policy
+scripts/run_ppo.sh main                 # 5 seeds x 6 cases, 8 processes
+python3 scripts/09_rebalancing_rules.py # all rules, cost grid, paired intervals (about 30 s)
+python3 scripts/10_ppo_v1_evaluate.py   # first-design tables, parity check and timing
+python3 figures/make_figure2.py
 ```
 
 Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
@@ -142,10 +237,12 @@ were led by the author.
 ## Layout
 
 ```
-design/      preregistration.json, deviations.md
-src/qmb/     data.py (loaders), engine.py (schedule, features, walk-forward, portfolios), stats.py (metrics)
-scripts/     01 download · 02 data checks · 03 backtests + robustness · 04 placebo · 05 figures · 06 recompute check
-tests/       synthetic-data tests of the engine
-reports/     result tables (CSV/JSON) and figures
-data/, tmp/  raw and clean data, logs (git-ignored)
+design/             preregistration.json and deviations.md (Part 1); rebalancing_v2_plan.md, rebalancing_v1_* (Part 2)
+src/qmb/            data.py (loaders), engine.py (schedule, features, walk-forward, portfolios), stats.py (metrics)
+src/qmb/rebalance/  cases.py (targets), env.py (accounting, simulator), rules.py (rank buffer, smoothing), ppo.py, splits.py
+scripts/            01 download · 02 data checks · 03 backtests + robustness · 04 placebo · 05 figures · 06 recompute check
+                    07 targets · 08 PPO training · 09 rebalancing rules · 10 first-design evaluation
+tests/              synthetic-data tests of the engine and the rebalancing rules
+reports/            result tables (CSV/JSON) and figures; reports/rebalancing/ for Part 2
+data/, tmp/         raw and clean data, caches, logs (git-ignored)
 ```
