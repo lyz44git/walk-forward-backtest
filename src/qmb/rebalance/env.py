@@ -107,24 +107,29 @@ class Market:
         return np.concatenate([endogenous_features(h_prev, self.W[t], self.S[t]), self.exo[t]], -1)
 
 
-def simulate(mkt: Market, t0: int, t1: int, policy=None, eta_const=None, band=None):
-    """Run weeks t0..t1-1 starting from h_{t0-1} = W_{t0-1} (full target the week before; same for every rule).
-    Exactly one of policy (callable obs->eta), eta_const, band is used. Returns dict of arrays."""
-    W, R, M = mkt.W, mkt.R, mkt.M
+def simulate(mkt: Market, t0: int, t1: int, policy=None, eta_const=None, band=None, targets=None,
+             cost_bps=COST_BPS, borrow_bps=BORROW_BPS):
+    """Run weeks t0..t1-1 starting from the full target of week t0-1 (the same start for every rule).
+
+    Exactly one of policy (callable obs -> eta), eta_const and band is used. `targets` replaces the
+    case's target weights (rank buffer, signal smoothing). Returns a dict of weekly arrays; `short` is
+    the short-leg notional after trading.
+    """
+    W = mkt.W if targets is None else targets
+    R, M = mkt.R, mkt.M
     h = W[t0 - 1].copy(); r_prev = R[t0 - 1]
     rec = {k: [] for k in ("net", "gross", "turnover", "short", "eta")}
     for t in range(t0, t1):
         d = drift(h, r_prev)
         if band is not None:
             width = band[t - t0] if np.ndim(band) else band
-            hn = band_holdings(d, W[t], M[t], width)
-            to = np.abs(hn - d).sum(); gross = (hn * R[t]).sum(); short = -hn[hn < 0].sum()
-            net = gross - to * COST_BPS / 1e4 - short * BORROW_BPS / 1e4 / 52.0
             eta = np.nan
-            h = hn
+            h = band_holdings(d, W[t], M[t], width)
+            to = np.abs(h - d).sum(); gross = (h * R[t]).sum(); short = -h[h < 0].sum()
+            net = gross - to * cost_bps / 1e4 - short * borrow_bps / 1e4 / 52.0
         else:
             eta = float(policy(mkt.obs(t, h))) if policy is not None else float(eta_const)
-            h, net, gross, to, short = step_accounting(d, W[t], M[t], R[t], eta)
+            h, net, gross, to, short = step_accounting(d, W[t], M[t], R[t], eta, cost_bps, borrow_bps)
         for k, v in zip(rec, (net, gross, to, short, eta)):
             rec[k].append(float(v))
         r_prev = R[t]
