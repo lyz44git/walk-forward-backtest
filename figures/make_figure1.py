@@ -45,8 +45,8 @@ def detach(ax):
 
 def letter(fig, ax, s, title, x=0.497):
     box = ax.get_position()
-    fig.text(x, box.y1 + 0.022, s, fontsize=10, fontweight="bold", va="bottom")
-    fig.text(x + 0.022, box.y1 + 0.0235, title, fontsize=7.5, va="bottom")
+    fig.text(x, box.y1 + 0.022, s, fontsize=8, fontweight="bold", va="baseline")
+    fig.text(x + 0.016, box.y1 + 0.022, title, fontsize=7.5, va="baseline")
 
 
 def leader(ax, xy, xytext, text, **kw):
@@ -102,9 +102,9 @@ def draw():
     a.set_xticks([dt.date(y, 1, 1) for y in (1980, 1990, 2000, 2010, 2020)], ["1980", "1990", "2000", "2010", "2020"])
     a.set_ylabel("Value of 1 invested, long-short, net of costs (log scale)")
     detach(a)
-    fig.text(0.012, 0.957, "a", fontsize=10, fontweight="bold", va="bottom")
-    fig.text(0.034, 0.9585, f'49 industry portfolios, {int(M[("french", "lgbm")]["weeks"]):,} weeks: LightGBM net Sharpe by half',
-             fontsize=7.5, va="bottom")
+    fig.text(0.012, 0.957, "a", fontsize=8, fontweight="bold", va="baseline")
+    fig.text(0.028, 0.957, f'49 industry portfolios, {int(M[("french", "lgbm")]["weeks"]):,} weeks: LightGBM net Sharpe by half',
+             fontsize=7.5, va="baseline")
 
     # inset: the same on tradable ETFs
     ins = a.inset_axes([0.07, 0.72, 0.29, 0.21])
