@@ -17,8 +17,13 @@ rebalancing rule keep more of it? A pre-specified walk-forward study on 30 ETFs 
 >    turnover by 31–70% at the same exposure, but give up about as much return before costs as they save in costs:
 >    no rule's net Sharpe differs detectably from full rebalancing. The simple rules pay off only at higher
 >    costs (10 bps, industry portfolios: +0.11 to +0.19 net Sharpe), and the learned policy never beats them.
+> 3. **Why.** The models are mostly momentum. On the industry portfolios their alpha of about 7% a year against
+>    market, size and value (t 3.7–3.9) falls to 1.1–1.5% (t 0.9–1.3) once the 12-1 momentum portfolio of the same
+>    universe is added. What they add is a faster component that costs 2–3 times momentum's turnover: their
+>    breakeven cost is 7–12 bps against 14–29 bps for momentum. Fitting the models to 4- or 13-week returns does
+>    not help either. The decision this supports: on price-only features, trade momentum, not the models.
 
-[Reproduce the results](#reproduce) · [Prediction design](#part-1-design) · [Rebalancing design](design/rebalancing_v2_plan.md)
+[Reproduce the results](#reproduce) · [Prediction design](#part-1-design) · [Rebalancing design](design/rebalancing_v2_plan.md) · [Diagnostics and label-horizon design](design/label_horizon_plan.md)
 
 **Question.** Do simple price-based features predict next-week relative returns, out of sample and after
 trading costs? The same pipeline is run on two public datasets:
@@ -142,15 +147,14 @@ Test-span results at 5 bps, averaged over the three signals (`rules_results.csv`
 1. **Every rule trades much less at the same exposure.** Turnover falls by 33–70% on ETFs and 31–63% on
    industries, with the short leg between 0.90 and 1.11 of target on the test span.
 2. **At 5 bps the saving is offset by lost return.** On ETFs the rank buffer saves 2.3 points of costs a year
-   and gives up 2.8 points of return before costs. The forecasts are for one week, so a position that is not
-   refreshed loses its edge about as fast as it saves costs. No interval excludes zero on either dataset; under
-   the reading rule, no rule recovers performance.
+   and gives up 2.8 points of return before costs. No interval excludes zero on either dataset; under the
+   reading rule, no rule recovers performance. Part 3 looks at where the lost return comes from.
 3. **The value of trading less rises with the cost.** At 10 bps all four simple rules beat full rebalancing on
    the industry portfolios (+0.11 to +0.19, intervals above zero); the ETF intervals still include zero. The cost
    grid is a pre-specified sensitivity, not the headline.
 4. **The learned policy adds nothing over the simple rules.** Averaged over signals, PPO is below every
-   simple rule on both datasets; on industries it is worse than the no-trade band (−0.10, interval −0.19 to −0.02). The conclusion is that the
-   cost drag in Part 1 is a property of the signal's horizon, not of the trading rule.
+   simple rule on both datasets; on industries it is worse than the no-trade band (−0.10, interval −0.19 to −0.02). The cost drag in Part 1 is
+   not something a trading rule removes.
 5. **Block length does not matter.** With mean blocks of 4 and 16 weeks every 5 bps conclusion is unchanged.
 
 **How this design came about.** A first design ([`design/rebalancing_v1_preregistration.md`](design/rebalancing_v1_preregistration.md),
@@ -166,13 +170,74 @@ had been looked at once.
 of one case took 91 s in one process and 56 s in eight, with identical parameters, weekly actions and test metrics
 (`v1/timing.csv`, `v1/distributed_parity.csv`).
 
+## Part 3. Where the cost drag comes from (`reports/diagnostics/`, `reports/horizon/`)
+
+Part 2 was first read as evidence that the forecasts are short-lived, so that a position that is not refreshed
+loses its edge. That reading was an inference, and the plan for this part
+([`design/label_horizon_plan.md`](design/label_horizon_plan.md), committed before any number below) stated what
+would contradict it. The diagnostics did contradict it, and the explanation was changed.
+
+<img src="figures/figure3.png" alt="Left: mean rank IC of each signal with the one-week return up to 12 weeks later. Middle and right: annual turnover and net Sharpe ratio of ridge and LightGBM fitted to 1-, 4- and 13-week returns, with 12-1 momentum as a dashed reference." width="100%">
+
+**Figure 3 | Decay and label horizon.** Left, mean rank IC of the week-t prediction with the one-week return j weeks later, for the Part 1 predictions. Middle and right, annual turnover and net Sharpe ratio at 5 bps when ridge and LightGBM are fitted to 1-, 4- and 13-week forward returns (1 week is Part 1); the dashed line is 12-1 momentum. Full out-of-sample span of Part 1. Drawn by [`figures/make_figure3.py`](figures/make_figure3.py).
+
+**Step A. Diagnostics of the Part 1 predictions** (no refitting; `scripts/11_signal_diagnostics.py`)
+
+| Diagnostic | ETFs | Industries |
+|---|---|---|
+| Rank IC at lag 0 → 1 → 12 weeks, ridge | 0.033 → 0.023 → 0.022 | 0.039 → 0.036 → 0.022 |
+| Rank IC at lag 0 → 1 → 12 weeks, LightGBM | 0.037 → 0.026 → 0.027 | 0.040 → 0.033 → 0.020 |
+| Rank IC at lag 0 → 1 → 12 weeks, 12-1 momentum | 0.035 → 0.036 → 0.032 | 0.038 → 0.037 → 0.030 |
+| One-week rank autocorrelation of predictions: models / momentum | 0.58–0.67 / 0.96 | 0.74–0.84 / 0.97 |
+| Quintile returns in order (adjacent pairs out of 4) | 3–4 | 4 |
+| Breakeven one-way cost, full sample: models / momentum | 6.9–7.5 bps / 14.1 bps | 10.9–12.1 bps / 29.4 bps |
+| Alpha vs market, size, value: models (per year, Newey-West t) | −3.0% to −3.2% (t −0.8 to −1.1) | 6.8% to 7.1% (t 3.7 to 3.9) |
+| Alpha after adding same-universe 12-1 momentum | −3.1% to −3.3% (t −1.1 to −1.2) | 1.1% to 1.5% (t 0.9 to 1.3) |
+| Loading on same-universe momentum (R²) | 0.20–0.47 (0.32–0.46) | 0.65–0.73 (0.66–0.69) |
+
+1. **The predictions are not short-lived.** A 12-week-old model prediction keeps 50–74% of the IC of a fresh
+   one. The short-lived part is the step from lag 0 to lag 1 (7–30% of the IC); after that the decay is slow.
+2. **The models are mostly momentum plus a fast component.** On industries, a regression on the factors
+   and the same-universe momentum portfolio explains two thirds of the variance of the model portfolios, and the alpha left after it is not distinguishable
+   from zero. Model rankings reshuffle far more from week to week than momentum's (autocorrelation 0.58–0.84
+   against 0.96–0.97), which is where the extra turnover comes from.
+3. **This is what Part 2 measured.** A rule that trades less keeps the persistent, momentum-like part and drops
+   the fast part; at 5 bps the fast part earns about what it costs to trade.
+4. **The ETF long-short portfolios carry market exposure.** Their market beta is 0.35–0.44 (long equities, short
+   bonds and commodities much of the time), and their alpha is negative and not significant. The Part 1 ETF
+   Sharpe ratios are therefore not market-neutral numbers.
+
+**Step B. Longer label horizons** (`scripts/12_label_horizon.py`; the one-week run reproduces Part 1 exactly)
+
+| Dataset | Label | Rank IC vs one-week return (ridge / LightGBM) | Turnover / yr | Net Sharpe at 5 bps | Mean difference from 1 week (95% CI) |
+|---|---|---|---|---|---|
+| ETFs | 1 week | 0.033 / 0.037 | 94× / 105× | 0.15 / 0.15 | — |
+| ETFs | 4 weeks | 0.026 / 0.036 | 70× / 74× | −0.02 / 0.04 | −0.14 (−0.44, +0.18) |
+| ETFs | 13 weeks | 0.010 / 0.031 | 76× / 65× | −0.33 / −0.04 | −0.33 (−0.73, +0.08) |
+| Industries | 1 week | 0.039 / 0.040 | 63× / 77× | 0.31 / 0.34 | — |
+| Industries | 4 weeks | 0.035 / 0.035 | 61× / 69× | 0.22 / 0.30 | −0.06 (−0.17, +0.04) |
+| Industries | 13 weeks | 0.034 / 0.034 | 49× / 52× | 0.18 / 0.22 | −0.12 (−0.27, +0.02) |
+
+Under the reading rule fixed in advance, a longer label does not keep more net performance: both primary
+intervals (4 weeks) include zero and both point estimates are negative. With a 4-week label turnover falls by 4–30%,
+still more than twice momentum's, and the IC against the one-week return falls with it. The conclusions are the same with mean
+blocks of 4 and 16 weeks and on the Part 2 test span alone (`horizon_pooled.csv`).
+
+**What the three parts say together.** The price-based models rank returns out of sample, but what they add to
+12-1 momentum is a fast component that does not pay for its turnover, and three ways of slowing them down
+(rebalancing rules, a learned policy, longer labels) leave net performance statistically unchanged or lower.
+On these features and universes the supported choice is plain momentum; a better result would need information
+that momentum does not already contain, not a different model or trading rule on the same prices.
+
 ## Verification
 
-- **Tests:** 18 pytest tests on synthetic data (`tests/`). Eight check the engine: features use no future
+- **Tests:** 25 pytest tests on synthetic data (`tests/`). Eight check the engine: features use no future
   prices, the target spans exactly entry → exit, purging works, pure noise gives no skill, a planted lagged
   signal is found, and the long-short accounting is correct. Ten check the rebalancing rules: cost and
   borrow accounting, that the neutral parameter of each rule returns the Part 1 targets, that both legs stay
-  full and disjoint, that a rule cannot see later predictions, and that the degenerate band is caught. Seven
+  full and disjoint, that a rule cannot see later predictions, and that the degenerate band is caught. Seven check the
+  label horizon: the target spans entry to the exit of the last label week, predictions do not move when every
+  price after the signal date is rewritten, and a purge that ignored the label length is shown to leak. Seven
   more run when the cached targets are present: full rebalancing reproduces `reports/ls_weekly.csv` to 1e-12
   for all six cases, and the PPO state uses only completed weeks.
 - **Regeneration:** after the rebalancing code was merged, the Part 1 weekly returns and all five first-design
@@ -216,6 +281,14 @@ scripts/run_ppo.sh main                 # 5 seeds x 6 cases, 8 processes
 python3 scripts/09_rebalancing_rules.py # all rules, cost grid, paired intervals (about 30 s)
 python3 scripts/10_ppo_v1_evaluate.py   # first-design tables, parity check and timing
 python3 figures/make_figure2.py
+
+# Part 3
+python3 scripts/11_signal_diagnostics.py                     # decay, quintiles, breakeven cost, attribution
+for h in 1 4 13; do for s in ridge lgbm; do for d in etf french; do
+  python3 scripts/12_label_horizon.py fit --dataset $d --signal $s --horizon $h   # LightGBM on industries: ~16 min each
+done; done; done
+python3 scripts/12_label_horizon.py summarize
+python3 figures/make_figure3.py
 ```
 
 Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
@@ -237,12 +310,14 @@ were led by the author.
 ## Layout
 
 ```
-design/             preregistration.json and deviations.md (Part 1); rebalancing_v2_plan.md, rebalancing_v1_* (Part 2)
+design/             preregistration.json and deviations.md (Part 1); rebalancing_v2_plan.md, rebalancing_v1_* (Part 2);
+                    label_horizon_plan.md (Part 3)
 src/qmb/            data.py (loaders), engine.py (schedule, features, walk-forward, portfolios), stats.py (metrics)
 src/qmb/rebalance/  cases.py (targets), env.py (accounting, simulator), rules.py (rank buffer, smoothing), ppo.py, splits.py
 scripts/            01 download · 02 data checks · 03 backtests + robustness · 04 placebo · 05 figures · 06 recompute check
                     07 targets · 08 PPO training · 09 rebalancing rules · 10 first-design evaluation
+                    11 signal diagnostics · 12 label horizons
 tests/              synthetic-data tests of the engine and the rebalancing rules
-reports/            result tables (CSV/JSON) and figures; reports/rebalancing/ for Part 2
+reports/            result tables (CSV/JSON) and figures; reports/rebalancing/ (Part 2); reports/diagnostics/, reports/horizon/ (Part 3)
 data/, tmp/         raw and clean data, caches, logs (git-ignored)
 ```
