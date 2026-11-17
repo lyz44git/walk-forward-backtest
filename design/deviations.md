@@ -18,3 +18,26 @@ Disclosed limitations (no code change):
 - **ETF universe chosen with hindsight.** The 30 ETFs are today's surviving, liquid funds. No ETF can drop out, so the sample has survivorship and selection bias. A point-in-time universe rule would need delisted-fund data, which Yahoo does not provide.
 - **Execution prices.** Opens are Yahoo's consolidated opening prints. Some crisis-day opens (for example XLB on 2020-03-16, a circuit-breaker day) may not have been tradable at size. Industry portfolios are not tradable instruments; their costs are hypothetical.
 - **LightGBM threads.** `num_threads` was raised from 8 to 16 for speed (`deterministic=True` is kept). This is not a design change.
+
+## Part 4 (non-price features): notes from step 0 and the run, 2026-11-17
+
+Nothing in `design/nonprice_features_plan.md` was changed after results were seen. The points below were
+settled at step 0, before any return was joined to the new columns, or are details the plan left open.
+
+- **Dating of BE/ME.** Neither the industry file nor its description page states the convention for the
+  "Sum of BE / Sum of ME" table. The plan's assumption (the row for year t uses book equity of the fiscal year
+  ending in t-1 and market equity of December t-1) is the library's general definition and is consistent with
+  a row for 2026 in a file built from the September 2026 database. It was not confirmed by an explicit
+  statement for this file; the 12-month timing check covers the case where it is wrong.
+- **Negative book equity.** The log is undefined where the industry's summed book equity is negative (0.4% of
+  rows, for example tobacco in recent years). Those values are treated as missing and set to the middle rank,
+  as the plan specifies for missing values.
+- **Coverage.** No feature came near the 20% rule; all seven were kept.
+- **Placebo seeds.** The plan did not fix the number: 20 for ridge and 3 for LightGBM per dataset.
+- **Placebo not centred on zero for LightGBM on ETFs.** The plan expected the placebo difference to be
+  indistinguishable from zero. It is for ridge; for LightGBM on ETFs it is -0.20 to -0.39. This is reported in
+  the README and does not change the reading of the primary estimand.
+- **Ties in carry.** ETFs that pay nothing have equal carry and equal rank; in the single sort the portfolio
+  rule breaks the tie by ticker order.
+- **Distributions as provided.** Yahoo's distribution records are used without correction (for example a
+  large XLE entry on 2019-12-30).

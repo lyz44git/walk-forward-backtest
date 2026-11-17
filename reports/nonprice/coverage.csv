@@ -1,0 +1,8 @@
+dataset,feature,panel_rows,missing_share,worst_year,worst_year_missing_share,kept
+etf,carry_12m,29040,0.0,2008,0.0,True
+etf,carry_12m_in_class,29040,0.0,2008,0.0,True
+french,log_bm,143725,0.004077230822751783,2021,0.03021978021978022,True
+french,log_bm_timely,143725,0.004077230822751783,2021,0.03021978021978022,True
+french,log_size,143725,0.0,1970,0.0,True
+french,firm_growth_12m,143725,6.261958601495912e-05,1970,0.006802721088435374,True
+french,breadth_63d,143725,0.0,1970,0.0,True

@@ -76,7 +76,9 @@ class Panel:
 
 
 def build_panel(tri: pd.DataFrame, exec_px: pd.DataFrame, features: dict[str, pd.DataFrame],
-                sched: pd.DataFrame, feature_lag_weeks: int = 0) -> Panel:
+                sched: pd.DataFrame, feature_lag_weeks: int = 0, neutral: tuple[str, ...] = ()) -> Panel:
+    """`neutral` names features whose missing values are set to 0 after ranking (the middle of the range),
+    so that they never remove a row from the panel."""
     names = list(features)
     sig = pd.DatetimeIndex(sched["signal"])
     # features observed at the signal date (optionally at an earlier signal date, for the lag robustness test)
@@ -85,7 +87,7 @@ def build_panel(tri: pd.DataFrame, exec_px: pd.DataFrame, features: dict[str, pd
     for nm in names:
         t = features[nm].reindex(src_sig)
         t.index = range(len(sched))
-        fx[nm] = cs_rank(t)
+        fx[nm] = cs_rank(t).fillna(0.0) if nm in neutral else cs_rank(t)
     px_in = exec_px.reindex(pd.DatetimeIndex(sched["entry"]))
     px_out = exec_px.reindex(pd.DatetimeIndex(sched["exit"]))
     ret = pd.DataFrame(px_out.to_numpy() / px_in.to_numpy() - 1, columns=exec_px.columns)
@@ -115,7 +117,7 @@ def horizon_target(panel: Panel, exec_px: pd.DataFrame, horizon: int) -> pd.Seri
 
 def walk_forward(panel: Panel, signal: str, initial_weeks: int, refit_every: int = 4, embargo: int = 1,
                  placebo: bool = False, seed: int = 0, target: pd.Series | None = None,
-                 label_weeks: int = 1) -> pd.Series:
+                 label_weeks: int = 1, fit_log: list | None = None) -> pd.Series:
     """Out-of-sample predictions for every week after the initial training span. Returns Series(week, asset).
 
     The first test week is chosen so that the first refit trains on exactly `initial_weeks` weeks: the purge
@@ -124,7 +126,9 @@ def walk_forward(panel: Panel, signal: str, initial_weeks: int, refit_every: int
     refit, so the fitted directions are independent across refits (a single permutation reused over nested
     expanding windows produces a persistent random direction, not a null).
     `target` replaces the one-week rank target (see horizon_target); `label_weeks` is the number of weeks it
-    spans, so that a week is used for training only after the exit of its last label week."""
+    spans, so that a week is used for training only after the exit of its last label week.
+    `fit_log`, if given, receives one (first test week, values) pair per refit: the ridge slopes, or the
+    LightGBM share of total gain, in the order of the panel's columns."""
     sch = panel.sched
     weeks = np.array(sorted(panel.X.index.get_level_values("week").unique()))
     test_weeks = weeks[weeks >= weeks[0] + initial_weeks + 1 + embargo]
@@ -161,9 +165,14 @@ def walk_forward(panel: Panel, signal: str, initial_weeks: int, refit_every: int
             pen = np.eye(A.shape[1]); pen[0, 0] = 0.0
             beta = np.linalg.solve(A.T @ A + 1.0 * pen, A.T @ yv[tr])
             p = np.column_stack([np.ones(te.sum()), Xv[te]]) @ beta
+            if fit_log is not None:
+                fit_log.append((int(k), beta[1:].copy()))
         elif signal == "lgbm":
             m = lgb.train(LGB_PARAMS, lgb.Dataset(Xv[tr], yv[tr]), LGB_ROUNDS)
             p = m.predict(Xv[te])
+            if fit_log is not None:
+                gain = m.feature_importance(importance_type="gain")
+                fit_log.append((int(k), gain / gain.sum()))
         else:
             raise ValueError(signal)
         out.append(pd.Series(p, index=panel.X.index[te]))

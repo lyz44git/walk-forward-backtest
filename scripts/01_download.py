@@ -17,7 +17,8 @@ TICKERS = ["SPY", "QQQ", "IWM", "DIA", "MDY",                    # U.S. equity i
            "TLT", "IEF", "SHY", "LQD", "HYG", "TIP",             # bonds
            "GLD", "SLV", "DBC", "USO"]                           # commodities
 FRENCH = {"49_Industry_Portfolios_daily_CSV.zip": "49 industry portfolios, daily",
-          "F-F_Research_Data_Factors_daily_CSV.zip": "Fama-French 3 factors + RF, daily"}
+          "F-F_Research_Data_Factors_daily_CSV.zip": "Fama-French 3 factors + RF, daily",
+          "49_Industry_Portfolios_CSV.zip": "49 industry portfolios, monthly and annual: firms, size, BE/ME (Part 4)"}
 BASE = "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/"
 YDIR.mkdir(parents=True, exist_ok=True); FDIR.mkdir(parents=True, exist_ok=True)
 

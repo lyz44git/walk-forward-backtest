@@ -22,8 +22,12 @@ rebalancing rule keep more of it? A pre-specified walk-forward study on 30 ETFs 
 >    universe is added. What they add is a faster component that costs 2–3 times momentum's turnover: their
 >    breakeven cost is 7–12 bps against 14–29 bps for momentum. Fitting the models to 4- or 13-week returns does
 >    not help either. The decision this supports: on price-only features, trade momentum, not the models.
+> 4. **New information.** Seven features that are not functions of the assets' own past prices (industry
+>    book-to-market, firm size, firm counts and breadth; ETF carry), fixed before the data were read, do not
+>    change this: net Sharpe moves by +0.03 on ETFs (95% CI −0.12 to +0.19) and +0.02 on industries (−0.05 to
+>    +0.09), and the alpha left after momentum stays within noise.
 
-[Reproduce the results](#reproduce) · [Prediction design](#part-1-design) · [Rebalancing design](design/rebalancing_v2_plan.md) · [Diagnostics and label-horizon design](design/label_horizon_plan.md)
+[Reproduce the results](#reproduce) · [Prediction design](#part-1-design) · [Rebalancing design](design/rebalancing_v2_plan.md) · [Diagnostics and label-horizon design](design/label_horizon_plan.md) · [Non-price feature design](design/nonprice_features_plan.md)
 
 **Question.** Do simple price-based features predict next-week relative returns, out of sample and after
 trading costs? The same pipeline is run on two public datasets:
@@ -227,19 +231,99 @@ blocks of 4 and 16 weeks and on the Part 2 test span alone (`horizon_pooled.csv`
 12-1 momentum is a fast component that does not pay for its turnover, and three ways of slowing them down
 (rebalancing rules, a learned policy, longer labels) leave net performance statistically unchanged or lower.
 On these features and universes the supported choice is plain momentum; a better result would need information
-that momentum does not already contain, not a different model or trading rule on the same prices.
+that momentum does not already contain, not a different model or trading rule on the same prices. Part 4 tests
+one set of such information.
+
+## Part 4. Features beyond past prices (`reports/nonprice/`)
+
+**Question.** Does information that is not a function of the assets' own past prices add to the price-based
+models? The feature list, availability dates, estimand and reading rule were written to
+[`design/nonprice_features_plan.md`](design/nonprice_features_plan.md) and committed before the new data were
+downloaded. The test weeks are the Part 1 weeks, so the price-based results on them were already known; the
+new columns had not been looked at.
+
+| Dataset | Feature | Definition | Used from |
+|---|---|---|---|
+| Industries | `log_bm` | log of sum of book equity / sum of market equity, annual | July of the year, for 12 months |
+| Industries | `log_bm_timely` | `log_bm` minus the industry's log return since the previous December | same |
+| Industries | `log_size` | log of average firm size, monthly | after the end of the following month |
+| Industries | `firm_growth_12m` | 12-month change in the log number of firms | same |
+| Industries | `breadth_63d` | 63-day equal-weighted minus value-weighted return | signal date |
+| ETFs | `carry_12m` | cash distributions over the last 252 trading days / price | signal date |
+| ETFs | `carry_12m_in_class` | `carry_12m` minus the mean of its asset class | signal date |
+
+The industry fields come from the monthly file of the same Kenneth French library; carry comes from the Yahoo
+files already used. A missing value is set to the middle rank, so the fitted and tested rows are exactly the
+Part 1 rows (the price-only refit reproduces the Part 1 weekly returns to 1e-10). Every feature passed the
+coverage rule: at most 0.4% of rows are missing (`coverage.csv`).
+
+<img src="figures/figure4.png" alt="Two panels: the change in net Sharpe ratio from adding the new features, with intervals that include zero on both datasets; and the alpha after momentum with and without the new features, all intervals including zero." width="100%">
+
+**Figure 4 | Adding features beyond past prices.** **a**, Net Sharpe ratio at 5 bps of the model with price and
+new features minus the model with price features only, with paired stationary-bootstrap 95% intervals.
+**b**, Annual alpha of the net long-short return after market, size, value and the 12-1 momentum portfolio of
+the same universe, with Newey-West 95% intervals; open markers use price features only, filled markers add the
+new features. Drawn by [`figures/make_figure4.py`](figures/make_figure4.py).
+
+| Dataset | Features | Rank IC (ridge / LightGBM) | Turnover / yr | Net Sharpe at 5 bps | Alpha after momentum, % / yr (t) |
+|---|---|---|---|---|---|
+| ETFs | Price | 0.033 / 0.037 | 94× / 105× | 0.15 / 0.15 | −3.1 (−1.1) / −3.3 (−1.2) |
+| ETFs | Price + new | 0.029 / 0.044 | 90× / 99× | 0.15 / 0.21 | −3.7 (−1.3) / −3.1 (−1.0) |
+| ETFs | New only | −0.005 / 0.029 | 19× / 45× | −0.06 / 0.03 | −2.4 (−0.8) / −3.6 (−1.2) |
+| Industries | Price | 0.039 / 0.040 | 63× / 77× | 0.31 / 0.34 | 1.1 (0.9) / 1.5 (1.3) |
+| Industries | Price + new | 0.039 / 0.041 | 64× / 72× | 0.32 / 0.36 | 0.7 (0.6) / 1.5 (1.4) |
+| Industries | New only | 0.015 / 0.014 | 27× / 49× | 0.07 / −0.12 | −2.5 (−2.2) / −3.7 (−3.2) |
+
+**Primary estimand** (mean over ridge and LightGBM of the net Sharpe difference, price + new minus price, 5 bps,
+`pooled.csv`): ETFs **+0.03** (95% CI −0.12 to +0.19); industries **+0.02** (−0.05 to +0.09).
+
+Under the reading rule fixed in advance, the new information does not add to the price-based models on either
+dataset, and there is no edge beyond momentum: no alpha after the momentum control has a t-statistic above 1.5.
+
+What the secondary numbers show:
+
+1. **The new features carry little on their own.** Sorting on any single one gives a weekly rank IC between
+   −0.006 and +0.003 and a net Sharpe between −0.16 and +0.07, with every interval including zero
+   (`results.csv`). Models fitted to the new features alone are below the price models on industries (mean
+   difference −0.34, CI −0.56 to −0.13) and not distinguishable on ETFs (−0.16, −0.63 to +0.30).
+2. **What the new-only industry models do predict is again momentum.** Their returns correlate 0.68–0.77 with
+   the momentum portfolio, because `log_bm_timely` and `breadth_63d` contain recent returns; after the momentum
+   control their alpha is negative.
+3. **The models use the features, without a gain.** LightGBM gives the new features 26% of total gain on
+   industries and 16% on ETFs; the ridge slopes on `log_bm_timely`, `breadth_63d` and `carry_12m` keep one sign in
+   91–100% of refits (`feature_weights.csv`).
+4. **Placebo.** With the new features reassigned across assets within each week, the Sharpe difference is
+   −0.01 on average for ridge on industries (20 seeds, −0.04 to +0.04) and −0.06 on ETFs (−0.16 to +0.01). For
+   LightGBM it is −0.03 on industries and −0.28 on ETFs (3 seeds each): on the small ETF panel, uninformative
+   columns by themselves lower the tree model's result, so the placebo is not centred on zero there as the plan
+   expected. The real features sit above these placebo values but, as the primary intervals show, not above
+   the price-only models.
+5. **Timing check.** Lagging the annual field a further 12 months and the monthly fields a further 3 months
+   gives −0.02 (−0.10 to +0.05) on industries.
+6. **Stability.** The primary difference is inside its interval at 0, 2, 5 and 10 bps, with mean blocks of 4
+   and 16 weeks, and in both halves of the industry sample. On ETFs it is +0.19 (−0.02 to +0.41) in the first
+   half and −0.08 (−0.28 to +0.14) in the second; LightGBM alone is above zero in the first half (+0.38, +0.04
+   to +0.72), and the sign reverses in the second.
+
+**What the four parts say together.** Neither a different trading rule, a different label, nor publicly
+available industry fundamentals and ETF carry moves these models away from 12-1 momentum after costs. On
+portfolios this coarse and at a weekly horizon, the cross-section of public information is small; the test of
+the pipeline on finer data (single stocks with point-in-time fundamentals) is outside what public sources allow.
 
 ## Verification
 
-- **Tests:** 25 pytest tests on synthetic data (`tests/`). Eight check the engine: features use no future
+- **Tests:** 30 pytest tests on synthetic data (`tests/`). Eight check the engine: features use no future
   prices, the target spans exactly entry → exit, purging works, pure noise gives no skill, a planted lagged
   signal is found, and the long-short accounting is correct. Ten check the rebalancing rules: cost and
   borrow accounting, that the neutral parameter of each rule returns the Part 1 targets, that both legs stay
   full and disjoint, that a rule cannot see later predictions, and that the degenerate band is caught. Seven check the
   label horizon: the target spans entry to the exit of the last label week, predictions do not move when every
-  price after the signal date is rewritten, and a purge that ignored the label length is shown to leak. Seven
-  more run when the cached targets are present: full rebalancing reproduces `reports/ls_weekly.csv` to 1e-12
-  for all six cases, and the PPO state uses only completed weeks.
+  price after the signal date is rewritten, and a purge that ignored the label length is shown to leak. Five
+  check the non-price features: annual and monthly values are not used before their availability dates, a
+  missing value is neutral and removes no row, and logging the refits does not change predictions. Nine
+  more run when the data or cached targets are present: full rebalancing reproduces `reports/ls_weekly.csv`
+  to 1e-12 for all six cases, the PPO state uses only completed weeks, and the book-to-market and carry
+  features match a direct calculation from the raw files.
 - **Regeneration:** after the rebalancing code was merged, the Part 1 weekly returns and all five first-design
   result files were regenerated byte for byte.
 - **Code review:** a structured review by lens (timing and look-ahead, walk-forward, accounting, statistics,
@@ -260,7 +344,10 @@ that momentum does not already contain, not a different model or trading rule on
 - **Execution.** Prices are Yahoo's consolidated opens. Some crisis-day opens may not have been tradable at
   size. Industry portfolios are not tradable, so their costs are hypothetical.
 - **No capacity or market-impact model.** Borrow cost is a flat 50 bps a year.
-- **Weekly horizon, price-only features.** No fundamental, options or intraday data.
+- **Weekly horizon, coarse information.** The only non-price inputs are industry-level book-to-market, size
+  and firm counts and ETF distributions (Part 4). No firm-level fundamentals, options or intraday data.
+- **Vintage of the industry fields.** The Kenneth French files are the current vintage, not point-in-time;
+  the availability lags of Part 4 reduce but do not remove revisions and backfilled book values.
 
 ## Reproduce
 
@@ -289,6 +376,10 @@ for h in 1 4 13; do for s in ridge lgbm; do for d in etf french; do
 done; done; done
 python3 scripts/12_label_horizon.py summarize
 python3 figures/make_figure3.py
+
+# Part 4
+scripts/run_nonprice.sh                 # coverage, all fits, summary (about 1.5 h; LightGBM on industries dominates)
+python3 figures/make_figure4.py
 ```
 
 Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
@@ -311,12 +402,13 @@ were led by the author.
 
 ```
 design/             preregistration.json and deviations.md (Part 1); rebalancing_v2_plan.md, rebalancing_v1_* (Part 2);
-                    label_horizon_plan.md (Part 3)
-src/qmb/            data.py (loaders), engine.py (schedule, features, walk-forward, portfolios), stats.py (metrics)
+                    label_horizon_plan.md (Part 3); nonprice_features_plan.md (Part 4)
+src/qmb/            data.py (loaders), engine.py (schedule, features, walk-forward, portfolios), stats.py (metrics),
+                    nonprice.py (Part 4 features), attribution.py (factor regressions)
 src/qmb/rebalance/  cases.py (targets), env.py (accounting, simulator), rules.py (rank buffer, smoothing), ppo.py, splits.py
 scripts/            01 download · 02 data checks · 03 backtests + robustness · 04 placebo · 05 figures · 06 recompute check
                     07 targets · 08 PPO training · 09 rebalancing rules · 10 first-design evaluation
-                    11 signal diagnostics · 12 label horizons
+                    11 signal diagnostics · 12 label horizons · 13 non-price features
 tests/              synthetic-data tests of the engine and the rebalancing rules
 reports/            result tables (CSV/JSON) and figures; reports/rebalancing/ (Part 2); reports/diagnostics/, reports/horizon/ (Part 3)
 data/, tmp/         raw and clean data, caches, logs (git-ignored)

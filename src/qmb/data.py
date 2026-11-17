@@ -80,3 +80,25 @@ def french_factors() -> pd.DataFrame:
     df = pd.DataFrame(rows, columns=["date", "mkt_rf", "smb", "hml", "rf"])
     df["date"] = pd.to_datetime(df["date"], format="%Y%m%d")
     return df.set_index("date").astype(float) / 100.0
+
+
+def french_table(zip_name: str, title: str, date_format: str) -> pd.DataFrame:
+    """One titled section of a French industry file as a wide table; missing-value codes become NaN.
+
+    date_format is "%Y%m%d" (daily), "%Y%m" (monthly) or "%Y" (annual); monthly and annual tables are
+    indexed by period."""
+    z = zipfile.ZipFile(RAW / "french" / zip_name)
+    lines = z.read(z.namelist()[0]).decode("latin-1").splitlines()
+    start = next(i for i, l in enumerate(lines) if l.strip() == title)
+    header = [h.strip() for h in lines[start + 1].split(",")]
+    data = []
+    for l in lines[start + 2:]:
+        parts = [p.strip() for p in l.split(",")]
+        if len(parts) != len(header) or not parts[0].isdigit():
+            break
+        data.append(parts)
+    df = pd.DataFrame(data, columns=["date"] + header[1:])
+    dates = pd.to_datetime(df.pop("date"), format=date_format)
+    df = df.astype(float)
+    df.index = dates if date_format == "%Y%m%d" else pd.PeriodIndex(dates, freq="M" if date_format == "%Y%m" else "Y")
+    return df.where(~df.isin([-99.99, -999.0]))
