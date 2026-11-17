@@ -5,6 +5,10 @@ rebalancing rule keep more of it? A pre-specified walk-forward study on 30 ETFs 
 
 [![tests](https://github.com/lyz44git/walk-forward-backtest/actions/workflows/tests.yml/badge.svg)](https://github.com/lyz44git/walk-forward-backtest/actions/workflows/tests.yml)
 
+<img src="figures/overview.png" alt="Two panels: rolling five-year net Sharpe ratio of 12-1 momentum, ridge and LightGBM on 49 industry portfolios, which move closely together; and the change in net Sharpe ratio from each modification tested in Parts 2 to 4, with 95% intervals that almost all include zero." width="100%">
+
+**Overview | The baseline through time, and every change tested against it.** **a**, Net Sharpe ratio over the previous 260 weeks of the Part 1 long-short portfolios on 49 industry portfolios, after 5 bps costs. **b**, Change in net Sharpe ratio at 5 bps from each modification, with paired stationary-bootstrap 95% intervals (mean block 8 weeks): Part 2 rules against full weekly rebalancing, averaged over 12-1 momentum, ridge and LightGBM, on that part's test span; Part 3 label horizons against the one-week label and Part 4 feature sets against price features, averaged over ridge and LightGBM, on the full out-of-sample span. Drawn by [`figures/make_overview.py`](figures/make_overview.py).
+
 <img src="figures/figure1.png" alt="Four-panel figure: cumulative net returns on industry portfolios with ETFs inset; real rank IC against placebo distributions; net Sharpe ratios with intervals; net Sharpe on ETFs against trading cost." width="100%">
 
 **Figure 1 | Headline results.** **a**, Value of 1 invested in each long-short signal after costs, out of sample, on 49 industry portfolios (log scale); the dashed line splits the sample into halves, labeled with the LightGBM net Sharpe ratio in each. Inset: the same on 30 ETFs. **b**, Mean weekly rank IC of ridge models trained on shuffled targets (100 seeds per dataset) against the real IC (vertical lines), which exceeds every placebo seed. **c**, Net Sharpe ratio with stationary block-bootstrap 95% intervals. Every ETF interval spans zero, so no signal passes the rule fixed in advance on both datasets. **d**, Net Sharpe ratio on ETFs as the assumed one-way trading cost rises from 0 to 10 bps; the reported results use 5 bps. Drawn by [`figures/make_figure1.py`](figures/make_figure1.py) from `reports/`.
@@ -380,6 +384,7 @@ python3 figures/make_figure3.py
 # Part 4
 scripts/run_nonprice.sh                 # coverage, all fits, summary (about 1.5 h; LightGBM on industries dominates)
 python3 figures/make_figure4.py
+python3 figures/make_overview.py
 ```
 
 Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
