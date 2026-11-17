@@ -108,6 +108,10 @@ changed.
   - At 10 bps the ETF models turn negative.
   - Industry momentum keeps a net Sharpe of 0.30.
 
+<img src="figures/figure5.png" alt="Heatmaps of the net return of each long-short portfolio by calendar year for 49 industry portfolios and 30 ETFs, and drawdown curves of 12-1 momentum, ridge and LightGBM on the industry portfolios." width="100%">
+
+**Figure 5 | Year by year, and drawdowns.** **a**, Compounded net return (5 bps) of each long-short portfolio over the weeks whose signal date falls in each calendar year; the colour scale saturates at ±30%, and the first and last year of each dataset are partial. **b**, Drawdown from the previous peak of the net long-short portfolios on 49 industry portfolios; the deepest values are those in `reports/main_results.csv`. The one-week reversal is left out of **b** because its drawdown (−96%) would compress the other three. Drawn by [`figures/make_figure5.py`](figures/make_figure5.py) from `reports/ls_weekly.csv`.
+
 ## Part 2. Rebalancing rules (`reports/rebalancing/`)
 
 Part 1 leaves a question: the models lose half or more of their Sharpe ratio to costs, because they turn the book
@@ -385,6 +389,7 @@ python3 figures/make_figure3.py
 scripts/run_nonprice.sh                 # coverage, all fits, summary (about 1.5 h; LightGBM on industries dominates)
 python3 figures/make_figure4.py
 python3 figures/make_overview.py
+python3 figures/make_figure5.py
 ```
 
 Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
