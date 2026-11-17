@@ -100,15 +100,31 @@ def build_panel(tri: pd.DataFrame, exec_px: pd.DataFrame, features: dict[str, pd
 
 
 # ---------------------------------------------------------------- walk-forward
+def horizon_target(panel: Panel, exec_px: pd.DataFrame, horizon: int) -> pd.Series:
+    """Cross-sectional rank of the return from the entry of week k to the exit of week k+horizon-1,
+    aligned to the panel rows (NaN where that exit is not in the sample). horizon = 1 returns panel.y."""
+    sch = panel.sched
+    px_in = exec_px.reindex(pd.DatetimeIndex(sch["entry"]))
+    px_out = exec_px.reindex(pd.DatetimeIndex(sch["exit"].shift(-(horizon - 1))))
+    ret = pd.DataFrame(px_out.to_numpy() / px_in.to_numpy() - 1, columns=exec_px.columns)
+    r = ret.stack(future_stack=True)
+    r.index.names = ["week", "asset"]
+    r = r.reindex(panel.X.index)
+    return r.groupby(level="week").transform(lambda v: (v.rank() - 0.5) / v.notna().sum() - 0.5)
+
+
 def walk_forward(panel: Panel, signal: str, initial_weeks: int, refit_every: int = 4, embargo: int = 1,
-                 placebo: bool = False, seed: int = 0) -> pd.Series:
+                 placebo: bool = False, seed: int = 0, target: pd.Series | None = None,
+                 label_weeks: int = 1) -> pd.Series:
     """Out-of-sample predictions for every week after the initial training span. Returns Series(week, asset).
 
     The first test week is chosen so that the first refit trains on exactly `initial_weeks` weeks: the purge
     drops the week whose holding period has not ended (k-1, k-2 in a regular calendar) and the embargo one more.
     Placebo: training targets are permuted across assets within each week, with a FRESH permutation at every
     refit, so the fitted directions are independent across refits (a single permutation reused over nested
-    expanding windows produces a persistent random direction, not a null)."""
+    expanding windows produces a persistent random direction, not a null).
+    `target` replaces the one-week rank target (see horizon_target); `label_weeks` is the number of weeks it
+    spans, so that a week is used for training only after the exit of its last label week."""
     sch = panel.sched
     weeks = np.array(sorted(panel.X.index.get_level_values("week").unique()))
     test_weeks = weeks[weeks >= weeks[0] + initial_weeks + 1 + embargo]
@@ -118,7 +134,11 @@ def walk_forward(panel: Panel, signal: str, initial_weeks: int, refit_every: int
         return -panel.X["ret_5d"].loc[test_weeks]
     exit_ = pd.DatetimeIndex(sch["exit"]); sig = pd.DatetimeIndex(sch["signal"])
     wk = panel.X.index.get_level_values("week").to_numpy()
-    Xv, y0 = panel.X.to_numpy(np.float64), panel.y.to_numpy(np.float64)
+    y = panel.y if target is None else target.reindex(panel.X.index)
+    Xv, y0 = panel.X.to_numpy(np.float64), y.to_numpy(np.float64)
+    known = ~np.isnan(y0)
+    label_end = weeks + label_weeks - 1                       # week whose exit closes the label of each week
+    in_sample = label_end < len(sch)
     if placebo:
         rng = np.random.default_rng(seed)
         order = np.argsort(wk, kind="stable")
@@ -128,9 +148,9 @@ def walk_forward(panel: Panel, signal: str, initial_weeks: int, refit_every: int
         block = test_weeks[start:start + refit_every]
         k = block[0]
         cutoff = sig[k] - pd.Timedelta(weeks=embargo)
-        train_weeks = weeks[(exit_[weeks] < cutoff)]
-        assert exit_[train_weeks].max() < sig[k], "purge violated"
-        tr = np.isin(wk, train_weeks); te = np.isin(wk, block)
+        train_weeks = weeks[in_sample][exit_[label_end[in_sample]] < cutoff]
+        assert exit_[train_weeks + label_weeks - 1].max() < sig[k], "purge violated"
+        tr = np.isin(wk, train_weeks) & known; te = np.isin(wk, block)
         yv = y0
         if placebo:                                # fresh within-week permutation for this refit
             yv = y0.copy()
