@@ -1,0 +1,3 @@
+dataset,signal,seed,processes,wall_seconds,launcher_wall_seconds,updates,logical_partitions
+etf,ridge,0,1,91.04164316691458,93.936,250,8
+etf,ridge,0,8,56.093970332993194,60.258,250,8

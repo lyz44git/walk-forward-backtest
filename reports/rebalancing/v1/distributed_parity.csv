@@ -1,0 +1,7 @@
+check,absolute_difference,tolerance,passed
+max_parameter_abs_diff,0.0,1e-06,True
+max_weekly_eta_abs_diff,0.0,1e-06,True
+max_weekly_net_abs_diff,0.0,1e-08,True
+test_sharpe_abs_diff,0.0,1e-06,True
+annual_turnover_abs_diff,0.0,1e-06,True
+max_drawdown_abs_diff,0.0,1e-06,True
