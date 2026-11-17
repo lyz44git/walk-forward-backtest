@@ -41,3 +41,12 @@ settled at step 0, before any return was joined to the new columns, or are detai
   rule breaks the tie by ticker order.
 - **Distributions as provided.** Yahoo's distribution records are used without correction (for example a
   large XLE entry on 2019-12-30).
+
+## Limits analysis: added 2026-11-17, after all results were known
+
+`scripts/14_limits.py` and the figure at the top of the README are descriptive and were not in any plan. They
+use the Part 1 predictions and cost grid as they are, with no refitting: (i) the cost at which each model's net
+Sharpe ratio equals momentum's, by linear interpolation between the grid costs of 0, 2, 5 and 10 bps; (ii) the
+Sharpe ratio before costs on 200 random subsets of the assets at each subset size (seed 0). The full-set value is
+checked against `reports/main_results.csv`. No test is attached to either, and the breadth result is not an
+estimate of what a larger universe of single stocks would give.

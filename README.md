@@ -1,9 +1,41 @@
-# Weekly equity signals under trading costs
+# It predicts. It doesn't pay.
 
-How much of a weekly cross-sectional return forecast is left after trading costs, and can a different
-rebalancing rule keep more of it? A pre-specified walk-forward study on 30 ETFs and 49 U.S. industry portfolios.
+**Can a weekly machine-learning forecast of equity returns beat plain momentum once it has to pay to trade?**
+
+On 49 U.S. industry portfolios, over 2,672 out-of-sample weeks, ridge and LightGBM rank next-week returns better
+than every shuffled-label placebo (rank IC 0.039–0.040). Before costs their long-short portfolios earn Sharpe
+ratios of 0.55–0.66, against 0.49 for 12-1 momentum. At 5 bps one-way the order reverses: 0.31–0.34 against 0.38.
+Three pre-specified attempts to close the gap (rebalancing rules including a reinforcement-learning policy, longer
+label horizons, features beyond past prices) left it where it was. This repository is the record of that study:
+weekly equity signals under trading costs, on 30 ETFs and 49 industry portfolios, with every plan written before
+its numbers.
 
 [![tests](https://github.com/lyz44git/walk-forward-backtest/actions/workflows/tests.yml/badge.svg)](https://github.com/lyz44git/walk-forward-backtest/actions/workflows/tests.yml)
+
+<img src="figures/limits.png" alt="Two panels: net Sharpe ratio against one-way trading cost for LightGBM, ridge and 12-1 momentum on 49 industry portfolios, with the models ahead below about 2.4 to 4.0 basis points and momentum ahead above; and Sharpe ratio before costs against the number of industries in the cross-section, rising more slowly than it would for independent bets." width="100%">
+
+**What limits the signal.** **a**, Net Sharpe ratio on 49 industry portfolios at each cost level of the Part 1 grid; the shaded band marks where each model's line crosses momentum's (linear interpolation between grid points). **b**, Sharpe ratio before costs when the same predictions are traded on random subsets of the industries (median of 200 subsets, band from the 10th to the 90th percentile); the number after each label is the log-log slope, and the dashed line shows the slope of 0.5 that independent bets would give. Both panels are descriptive and were added after all results were known ([`scripts/14_limits.py`](scripts/14_limits.py), [`figures/make_limits.py`](figures/make_limits.py)).
+
+## What stands between this signal and a strategy
+
+The forecast is real and the portfolio is not worth trading. Three measured quantities account for the difference,
+and none of them is the choice of model.
+
+1. **Trading cost.** The models turn their portfolios over 63–77 times a year, momentum 26 times. Interpolating the
+   cost grid, ridge matches momentum at 2.4 bps one-way and LightGBM at 4.0 bps; below that the models lead, above
+   it momentum does. The 5 bps used throughout is an assumed level, not an estimate from execution data, so the
+   ranking of the models against momentum depends on a number this study cannot measure.
+2. **Breadth.** Traded on 8 industries instead of 49, the same predictions give a Sharpe ratio before costs of
+   0.37–0.40 instead of 0.55–0.66: a log-log slope of 0.25–0.29, about half the 0.5 that independent bets would
+   give. Forty-nine portfolios of the same stock market are far fewer than 49 separate bets, and doubling their
+   number from 24 to 49 adds 10–17% to the Sharpe ratio.
+3. **Information.** Built on past prices, the models are mostly momentum: their alpha falls from about 7% a year
+   (t 3.7–3.9) to 1.1–1.5% (t 0.9–1.3) once the momentum portfolio of the same universe is controlled for. Seven
+   public features beyond prices change the net Sharpe ratio by +0.02 (95% CI −0.05 to +0.09).
+
+Swapping ridge for LightGBM changes the net Sharpe ratio by 0.03. What would move the result is a wider cross-section of
+single securities, point-in-time information that is not already in prices, and measured rather than assumed
+execution costs. Those are inputs, not modeling choices, and they are outside what public data provide.
 
 <img src="figures/overview.png" alt="Two panels: rolling five-year net Sharpe ratio of 12-1 momentum, ridge and LightGBM on 49 industry portfolios, which move closely together; and the change in net Sharpe ratio from each modification tested in Parts 2 to 4, with 95% intervals that almost all include zero." width="100%">
 
@@ -390,6 +422,10 @@ scripts/run_nonprice.sh                 # coverage, all fits, summary (about 1.5
 python3 figures/make_figure4.py
 python3 figures/make_overview.py
 python3 figures/make_figure5.py
+
+# Limits (descriptive)
+python3 scripts/14_limits.py
+python3 figures/make_limits.py
 ```
 
 Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
