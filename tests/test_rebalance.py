@@ -110,7 +110,7 @@ def test_a_band_as_wide_as_a_position_lets_the_book_run_off():
 
 
 @pytest.mark.skipif(not CACHED, reason="no cached targets (scripts/07_build_targets.py)")
-@pytest.mark.parametrize("path", CACHED, ids=lambda p: p.stem)
+@pytest.mark.parametrize("path", CACHED, ids=[p.stem for p in CACHED])
 def test_full_rebalancing_reproduces_the_backtest(path):
     case = cases.load_case(path)
     ref = pd.read_csv(ROOT / "reports" / "ls_weekly.csv", parse_dates=["date"])
