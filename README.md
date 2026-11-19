@@ -397,10 +397,48 @@ Under the reading rule: no detectable difference on either dataset.
 6. **Solver.** No solve ended other than optimal; the largest violation of the budget or gross constraint is
    8.5e-12. Mean shrinkage intensity is 0.12 on industries and 0.15 on ETFs.
 
+## Part 6. What the ETFs cost to trade (`reports/tick/`)
+
+Parts 1 to 5 charge the ETFs an assumed 5 bps per unit of one-way turnover. Part 6 measures the cost of a small
+marketable order from NASDAQ TotalView-ITCH 5.0 messages for two full days, 8 and 9 December 2025. A C++ parser
+([`native/itch_book.cpp`](native/itch_book.cpp)) reads every message of the day (650 and 590 million), rebuilds
+NASDAQ's displayed order book for the 30 ETFs, and signs each execution by the side of the resting order it hit.
+A day takes about 40 seconds; the second day was streamed from NASDAQ and never stored. The plan is
+[`design/tick_costs_plan.md`](design/tick_costs_plan.md) (SHA-256 `abb7522b3c7a…`), committed before any order,
+quote or trade was read.
+
+| 30 ETFs, NASDAQ, 9:30–16:00 | 8 Dec 2025 | 9 Dec 2025 |
+|---|---|---|
+| **Effective half-spread, mean over ETFs (primary)** | **0.61 bps** | **0.58 bps** |
+| Median (range) over ETFs | 0.50 (0.08–1.70) | 0.50 (0.08–1.25) |
+| Quoted half-spread, whole session / first five minutes | 0.68 / 0.98 | 0.68 / 1.27 |
+| Midpoint move with the order after 1 / 5 minutes | 0.98 / 0.97 | 0.89 / 0.84 |
+| Realized half-spread after 5 minutes | −0.37 | −0.25 |
+| Share of volume executed against non-displayed orders | 20% | 18% |
+
+Under the reading rule fixed in advance: below 2 bps on both days, so the 5 bps assumption overstates the cost of a
+small marketable order on NASDAQ on these days, and the ETF results are read at the 0 to 2 bps end of the grid.
+
+1. **The cost is a fraction of the assumption.** No ETF reaches 2 bps on either day; the widest is DBC (1.70 bps on
+   8 December), and SPY and QQQ cost 0.08–0.10 bps.
+2. **The open is wider.** In the first five minutes the quoted half-spread averages 0.98–1.27 bps and exceeds 2 bps
+   for DBC, MDY, VGK, IYR and XLV on at least one day. The backtest trades at the open.
+3. **The price keeps moving with the order.** Within five minutes the midpoint moves 0.84–0.97 bps in the direction
+   of the incoming order, more than the half-spread it paid, so the liquidity provider's realized spread is
+   negative. For an order larger than the displayed depth (median $207,000 at NASDAQ's best bid, smallest
+   $23,000), this movement rather than the spread would set the cost; it is not measured here.
+4. **What it means for the ETF results.** On the Part 1 cost grid (810 weeks), the ETF models' net Sharpe ratios
+   are 0.39–0.54 for LightGBM and 0.33–0.45 for ridge at 2 and 0 bps, against 0.21–0.24 for 12-1 momentum; at 5 bps
+   all three are 0.15–0.16. This is a reading of the published grid, not a new test: at 5 bps the ETF intervals are
+   about one Sharpe unit wide (LightGBM −0.35 to +0.62), and the two measured days are from 2025, when spreads were narrower than in the
+   early years of the sample. No number in Parts 1 to 5 is changed.
+5. **Not measured.** The opening auction on the primary listing exchange (most of these ETFs list on NYSE Arca),
+   orders larger than the displayed depth, and any other day.
+
 ## Verification
 
-- **Tests:** 30 pytest tests on synthetic data (`tests/`), plus 27 for the C++ kernels and 8 for the Part 5
-  optimizer described below. Eight check the engine: features use no future
+- **Tests:** 30 pytest tests on synthetic data (`tests/`), plus 27 for the C++ kernels, 8 for the Part 5
+  optimizer and 8 for the Part 6 parser, described below. Eight check the engine: features use no future
   prices, the target spans exactly entry → exit, purging works, pure noise gives no skill, a planted lagged
   signal is found, and the long-short accounting is correct. Ten check the rebalancing rules: cost and
   borrow accounting, that the neutral parameter of each rule returns the Part 1 targets, that both legs stay
@@ -440,13 +478,19 @@ Under the reading rule: no detectable difference on either dataset.
   that Σ and α use only weeks completed by the signal date, and that the accounting and the selection rule follow
   the plan. `scripts/16_portfolio_optimizer.py` stops unless its full-rebalancing series equals Part 2's published
   one to 1e-12, and draws its bootstrap paths with the C++ index kernel.
+- **ITCH parser:** `tests/test_itch.py` builds message streams byte by byte from the ITCH 5.0 specification and
+  checks the book, the signs, the time-weighted spread and depth, the one-second midpoint grid, a locked book, the
+  failure checks and the cost arithmetic. On both sample days every message the parser reads had its specified
+  length, every execute, cancel, delete and replace matched an earlier order, no price level went negative, and
+  the book never crossed (`reports/tick/checks.csv`).
 
 ## Limitations
 
 - **Survivorship and selection bias.** The ETF universe is today's 30 surviving funds; no fund can drop out.
 - **Execution.** Prices are Yahoo's consolidated opens. Some crisis-day opens may not have been tradable at
   size. Industry portfolios are not tradable, so their costs are hypothetical.
-- **No capacity or market-impact model.** Borrow cost is a flat 50 bps a year.
+- **No capacity or market-impact model.** Part 6 measures the cost of small marketable orders on NASDAQ on two
+  days only. Borrow cost is a flat 50 bps a year.
 - **Weekly horizon, coarse information.** The only non-price inputs are industry-level book-to-market, size
   and firm counts and ETF distributions (Part 4). No firm-level fundamentals, options or intraday data.
 - **Vintage of the industry fields.** The Kenneth French files are the current vintage, not point-in-time;
@@ -496,15 +540,19 @@ python3 scripts/15_native_kernels.py
 
 # Part 5 (needs the Part 2 targets in tmp/rebalance)
 python3 scripts/16_portfolio_optimizer.py  # six cases in parallel, about 5 min on 6 cores
+
+# Part 6: streams about 17 GB of NASDAQ ITCH files through the C++ parser; nothing is stored
+python3 native/build.py
+python3 scripts/17_tick_costs.py
 ```
 
-Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
-from the library.
+Raw data are not redistributed: Yahoo data are for personal use, the Ken French files can be downloaded
+from the library, and the NASDAQ ITCH sample files are read from NASDAQ's site; only per-ETF aggregates are kept.
 
 ## License
 
-Code is released under the MIT License (see `LICENSE`). Yahoo Finance and Kenneth French data are not covered and
-are not redistributed here.
+Code is released under the MIT License (see `LICENSE`). Yahoo Finance, Kenneth French and NASDAQ data are not
+covered and are not redistributed here.
 
 **Use.** This is a non-commercial research project. The data and all derived outputs in this repository are used
 for research only.
@@ -518,19 +566,21 @@ were led by the author.
 
 ```
 design/             preregistration.json and deviations.md (Part 1); rebalancing_v2_plan.md, rebalancing_v1_* (Part 2);
-                    label_horizon_plan.md (Part 3); nonprice_features_plan.md (Part 4); portfolio_optimizer_plan.md (Part 5)
+                    label_horizon_plan.md (Part 3); nonprice_features_plan.md (Part 4); portfolio_optimizer_plan.md (Part 5);
+                    tick_costs_plan.md (Part 6)
 src/qmb/            data.py (loaders), engine.py (schedule, features, walk-forward, portfolios), stats.py (metrics),
                     nonprice.py (Part 4 features), attribution.py (factor regressions)
 src/qmb/rebalance/  cases.py (targets), env.py (accounting, simulator), rules.py (rank buffer, smoothing), ppo.py, splits.py,
                     optimizer.py (Part 5: Ledoit–Wolf, weekly convex problem)
-native/             qmb_kernels.cpp (stationary bootstrap, portfolio accounting; C++17, C ABI), build.py; bindings in src/qmb/native.py
+native/             qmb_kernels.cpp (stationary bootstrap, portfolio accounting; C++17, C ABI), build.py; bindings in src/qmb/native.py;
+                    itch_book.cpp (Part 6: NASDAQ ITCH 5.0 parser and order book)
 scripts/            01 download · 02 data checks · 03 backtests + robustness · 04 placebo · 05 figures · 06 recompute check
                     07 targets · 08 PPO training · 09 rebalancing rules · 10 first-design evaluation
                     11 signal diagnostics · 12 label horizons · 13 non-price features · 14 limits
-                    15 C++ kernels: parity and timing · 16 portfolio optimizer (Part 5)
+                    15 C++ kernels: parity and timing · 16 portfolio optimizer (Part 5) · 17 tick costs (Part 6)
 tests/              synthetic-data tests of the engine and the rebalancing rules; test_native.py checks the C++ kernels;
-                    test_optimizer.py checks the Part 5 optimizer
+                    test_optimizer.py checks the Part 5 optimizer; test_itch.py the Part 6 parser
 reports/            result tables (CSV/JSON) and figures; reports/rebalancing/ (Part 2); reports/diagnostics/, reports/horizon/ (Part 3);
-                    reports/optimizer/ (Part 5)
+                    reports/optimizer/ (Part 5); reports/tick/ (Part 6)
 data/, tmp/         raw and clean data, caches, logs (git-ignored)
 ```
