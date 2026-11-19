@@ -15,4 +15,7 @@ jobs:
           python-version: "3.13"
           cache: pip
       - run: pip install -r requirements.txt
+      - run: python native/build.py
       - run: pytest tests -q
+        env:
+          QMB_REQUIRE_NATIVE: "1"

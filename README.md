@@ -352,7 +352,7 @@ the pipeline on finer data (single stocks with point-in-time fundamentals) is ou
 
 ## Verification
 
-- **Tests:** 30 pytest tests on synthetic data (`tests/`). Eight check the engine: features use no future
+- **Tests:** 30 pytest tests on synthetic data (`tests/`), plus 27 for the C++ kernels described below. Eight check the engine: features use no future
   prices, the target spans exactly entry → exit, purging works, pure noise gives no skill, a planted lagged
   signal is found, and the long-short accounting is correct. Ten check the rebalancing rules: cost and
   borrow accounting, that the neutral parameter of each rule returns the Part 1 targets, that both legs stay
@@ -377,6 +377,15 @@ the pipeline on finer data (single stocks with point-in-time fundamentals) is ou
   zero does not depend on the seed for any signal (`reports/bootstrap_seed_sensitivity.csv`).
 - **Data quality:** `reports/data_quality.json` covers calendar gaps, split and dividend adjustments, and
   large moves; every outlier traced to a real market event.
+- **C++ kernels:** two interpreted loops of the project, the index walk of the stationary bootstrap and the
+  week-by-week accounting of the rebalancing rules, are also written in C++17 (`native/qmb_kernels.cpp`, called
+  from NumPy through `ctypes` in `src/qmb/native.py`). The Python code stays the reference, and the bootstrap's
+  random numbers are still drawn by NumPy in the same order, so both versions resample the same weeks. The kernels
+  reproduce the eight published Sharpe intervals to 2.2e-15 and the weekly accounting of full rebalancing, partial
+  adjustment and the no-trade band on all six test spans to 8.9e-16 (252,000 values, `reports/native/parity.csv`).
+  On the machine that produced `reports/native/timing.csv` they run 13 to 52 times faster. They are compiled without
+  `-ffast-math` and with `-ffp-contract=off`, and `tests/test_native.py` adds 27 tests that run in continuous
+  integration.
 
 ## Limitations
 
@@ -395,6 +404,7 @@ the pipeline on finer data (single stocks with point-in-time fundamentals) is ou
 pip install -r requirements.txt
 python3 scripts/01_download.py      # Yahoo (yfinance) + Ken French files into data/raw (git-ignored)
 python3 scripts/02_check_data.py
+python3 native/build.py             # optional: C++ kernels (any C++17 compiler); tests build them if absent
 python3 -m pytest tests -q
 python3 scripts/03_backtest.py      # ~35 min on a 32-core machine
 python3 scripts/04_placebo.py && python3 scripts/04_placebo.py --summary
@@ -426,6 +436,9 @@ python3 figures/make_figure5.py
 # Limits (descriptive)
 python3 scripts/14_limits.py
 python3 figures/make_limits.py
+
+# C++ kernels: parity with the Python reference and timing on this machine
+python3 scripts/15_native_kernels.py
 ```
 
 Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
@@ -452,10 +465,12 @@ design/             preregistration.json and deviations.md (Part 1); rebalancing
 src/qmb/            data.py (loaders), engine.py (schedule, features, walk-forward, portfolios), stats.py (metrics),
                     nonprice.py (Part 4 features), attribution.py (factor regressions)
 src/qmb/rebalance/  cases.py (targets), env.py (accounting, simulator), rules.py (rank buffer, smoothing), ppo.py, splits.py
+native/             qmb_kernels.cpp (stationary bootstrap, portfolio accounting; C++17, C ABI), build.py; bindings in src/qmb/native.py
 scripts/            01 download · 02 data checks · 03 backtests + robustness · 04 placebo · 05 figures · 06 recompute check
                     07 targets · 08 PPO training · 09 rebalancing rules · 10 first-design evaluation
-                    11 signal diagnostics · 12 label horizons · 13 non-price features
-tests/              synthetic-data tests of the engine and the rebalancing rules
+                    11 signal diagnostics · 12 label horizons · 13 non-price features · 14 limits
+                    15 C++ kernels: parity and timing
+tests/              synthetic-data tests of the engine and the rebalancing rules; test_native.py checks the C++ kernels
 reports/            result tables (CSV/JSON) and figures; reports/rebalancing/ (Part 2); reports/diagnostics/, reports/horizon/ (Part 3)
 data/, tmp/         raw and clean data, caches, logs (git-ignored)
 ```
