@@ -350,9 +350,57 @@ available industry fundamentals and ETF carry moves these models away from 12-1 
 portfolios this coarse and at a weekly horizon, the cross-section of public information is small; the test of
 the pipeline on finer data (single stocks with point-in-time fundamentals) is outside what public sources allow.
 
+## Part 5. Portfolio construction with a risk model (`reports/optimizer/`)
+
+Parts 1 and 2 trade an equal-weight top-and-bottom-20% book. Part 5 asks whether a mean-variance optimizer on the
+same predictions earns a higher net Sharpe ratio than full rebalancing to that book. The plan is
+[`design/portfolio_optimizer_plan.md`](design/portfolio_optimizer_plan.md) (SHA-256 `bfc704053e22…`), committed
+before any optimizer return was computed; the test spans had already been used by Parts 1 to 4, so this is a
+further analysis of spans already looked at.
+
+- **Method.** Each week, from the drifted holdings d, maximize α′h − (γ/2) h′Σh − κ‖h − d‖₁ subject to
+  sum(h) = 0 and ‖h‖₁ ≤ 2, solved with CVXPY and the Clarabel interior-point solver. Σ is the Ledoit–Wolf
+  shrinkage of the 52 weekly returns completed by the signal date; α = IC × σ × z (Grinold and Kahn), with z the
+  standardized prediction and IC its training-span mean. γ ∈ {1, 3, 10, 30, 100} and κ = m × cost with
+  m ∈ {0, 1, 2, 4} are chosen on the training span by net Sharpe among points whose mean short notional is
+  0.90–1.10, as in Part 2. Cases, spans, costs and accounting are those of Part 2.
+
+| Test span, 5 bps | Selected γ, m | Net Sharpe, full → optimizer | Volatility a year | Turnover a year |
+|---|---|---|---|---|
+| Industries, LightGBM | 30, 2 | 0.10 → 0.32 | 15.8% → 10.9% | 72 → 36 |
+| Industries, ridge | 30, 2 | 0.10 → 0.34 | 16.9% → 10.0% | 64 → 17 |
+| Industries, 12-1 momentum | 30, 1 | 0.24 → 0.39 | 18.7% → 9.8% | 27 → 9 |
+| ETFs, LightGBM | 3, 4 | 0.56 → −0.24 | 15.3% → 10.2% | 98 → 2.5 |
+| ETFs, ridge | 1, 1 | 0.44 → 0.41 | 17.6% → 23.9% | 92 → 36 |
+| ETFs, 12-1 momentum | 10, 4 | 0.26 → 0.18 | 18.7% → 12.3% | 30 → 2.6 |
+
+| Mean difference over the three signals, 5 bps | Optimizer − full | 95% CI |
+|---|---|---|
+| **Industries (primary)** | **+0.21** | **−0.04 to +0.44** |
+| **ETFs (primary)** | **−0.30** | **−0.66 to +0.05** |
+
+Under the reading rule: no detectable difference on either dataset.
+
+1. **The sign splits by dataset.** The difference is positive for all three industry signals and negative for all
+   three ETF signals, and neither primary interval excludes zero.
+2. **What changes is risk and turnover.** On industries the optimizer cuts volatility from 16–19% to 10–11% a year
+   and turnover by 50–73%.
+3. **On ETFs the selected penalty nearly freezes the book.** For LightGBM and momentum the training span chose
+   m = 4, and test-span turnover fell to 2.5–2.6 a year: the book stays close to its starting target and drifts.
+   Its mean short notional (0.97–0.98) passes the exposure screen, so the plan's screen does not catch a book
+   that the predictions no longer steer. This is reported, not corrected after the fact.
+4. **Costs and the penalty.** At 10 bps the industry difference is +0.28 (+0.03 to +0.52), the only interval
+   above zero; it is secondary and not promoted. Without the turnover penalty (m = 0) the industry difference at
+   5 bps is −0.04 (−0.26 to +0.19); at zero cost, where the penalty has no effect, it is +0.13 (−0.09 to +0.36).
+5. **Against the Part 2 rules** (5 bps, the published weekly series): +0.12 to +0.22 on industries and −0.14 to
+   −0.29 on ETFs, every interval including zero.
+6. **Solver.** No solve ended other than optimal; the largest violation of the budget or gross constraint is
+   8.5e-12. Mean shrinkage intensity is 0.12 on industries and 0.15 on ETFs.
+
 ## Verification
 
-- **Tests:** 30 pytest tests on synthetic data (`tests/`), plus 27 for the C++ kernels described below. Eight check the engine: features use no future
+- **Tests:** 30 pytest tests on synthetic data (`tests/`), plus 27 for the C++ kernels and 8 for the Part 5
+  optimizer described below. Eight check the engine: features use no future
   prices, the target spans exactly entry → exit, purging works, pure noise gives no skill, a planted lagged
   signal is found, and the long-short accounting is correct. Ten check the rebalancing rules: cost and
   borrow accounting, that the neutral parameter of each rule returns the Part 1 targets, that both legs stay
@@ -386,6 +434,12 @@ the pipeline on finer data (single stocks with point-in-time fundamentals) is ou
   On the machine that produced `reports/native/timing.csv` they run 13 to 52 times faster. They are compiled without
   `-ffast-math` and with `-ffp-contract=off`, and `tests/test_native.py` adds 27 tests that run in continuous
   integration.
+- **Optimizer:** `tests/test_optimizer.py` checks that the Ledoit–Wolf estimate equals scikit-learn's to 1e-15,
+  that every solution meets the constraints, that with negligible risk aversion the book is the best and worst
+  name and with high risk aversion the closed-form mean-variance portfolio, that a higher penalty trades less,
+  that Σ and α use only weeks completed by the signal date, and that the accounting and the selection rule follow
+  the plan. `scripts/16_portfolio_optimizer.py` stops unless its full-rebalancing series equals Part 2's published
+  one to 1e-12, and draws its bootstrap paths with the C++ index kernel.
 
 ## Limitations
 
@@ -439,6 +493,9 @@ python3 figures/make_limits.py
 
 # C++ kernels: parity with the Python reference and timing on this machine
 python3 scripts/15_native_kernels.py
+
+# Part 5 (needs the Part 2 targets in tmp/rebalance)
+python3 scripts/16_portfolio_optimizer.py  # six cases in parallel, about 5 min on 6 cores
 ```
 
 Raw data are not redistributed: Yahoo data are for personal use, and the Ken French files can be downloaded
@@ -461,16 +518,19 @@ were led by the author.
 
 ```
 design/             preregistration.json and deviations.md (Part 1); rebalancing_v2_plan.md, rebalancing_v1_* (Part 2);
-                    label_horizon_plan.md (Part 3); nonprice_features_plan.md (Part 4)
+                    label_horizon_plan.md (Part 3); nonprice_features_plan.md (Part 4); portfolio_optimizer_plan.md (Part 5)
 src/qmb/            data.py (loaders), engine.py (schedule, features, walk-forward, portfolios), stats.py (metrics),
                     nonprice.py (Part 4 features), attribution.py (factor regressions)
-src/qmb/rebalance/  cases.py (targets), env.py (accounting, simulator), rules.py (rank buffer, smoothing), ppo.py, splits.py
+src/qmb/rebalance/  cases.py (targets), env.py (accounting, simulator), rules.py (rank buffer, smoothing), ppo.py, splits.py,
+                    optimizer.py (Part 5: Ledoit–Wolf, weekly convex problem)
 native/             qmb_kernels.cpp (stationary bootstrap, portfolio accounting; C++17, C ABI), build.py; bindings in src/qmb/native.py
 scripts/            01 download · 02 data checks · 03 backtests + robustness · 04 placebo · 05 figures · 06 recompute check
                     07 targets · 08 PPO training · 09 rebalancing rules · 10 first-design evaluation
                     11 signal diagnostics · 12 label horizons · 13 non-price features · 14 limits
-                    15 C++ kernels: parity and timing
-tests/              synthetic-data tests of the engine and the rebalancing rules; test_native.py checks the C++ kernels
-reports/            result tables (CSV/JSON) and figures; reports/rebalancing/ (Part 2); reports/diagnostics/, reports/horizon/ (Part 3)
+                    15 C++ kernels: parity and timing · 16 portfolio optimizer (Part 5)
+tests/              synthetic-data tests of the engine and the rebalancing rules; test_native.py checks the C++ kernels;
+                    test_optimizer.py checks the Part 5 optimizer
+reports/            result tables (CSV/JSON) and figures; reports/rebalancing/ (Part 2); reports/diagnostics/, reports/horizon/ (Part 3);
+                    reports/optimizer/ (Part 5)
 data/, tmp/         raw and clean data, caches, logs (git-ignored)
 ```
